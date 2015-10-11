@@ -1,0 +1,4 @@
+package lambductive
+
+sourcedir = src
+modules = Lambductive, Test
