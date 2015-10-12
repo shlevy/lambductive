@@ -3,6 +3,8 @@
 ||| Since this is a library for defining valid constructions, we only need to typecheck this to test.
 module Test
 
+%default total
+
 import Lambductive
 
 ||| |- U type
