@@ -2,6 +2,13 @@
 module Lambductive
 
 mutual
+  ||| Judgment context
+  public data Context : Type where
+    ||| The empty context
+    Empty  : Context
+    ||| Create a new context with the head variable having a given type
+    Snoc : (ctx : Context) -> IsType ctx type -> Context
+
   ||| Terms of the language
   public data Term : Type where
     ||| The base (tarski-style) universe
@@ -9,12 +16,7 @@ mutual
     ||| The universe interpretation operator
     El : (HasType {ctx = ctx} {type = U} term u) -> Term
     ||| The pi type former
-    Pi : IsType ctx a -> IsType ctx b -> Term
-
-  ||| Judgment context
-  public data Context : Type where
-    ||| The empty context
-    Nil : Context
+    Pi : (A : IsType ctx a) -> IsType (Snoc ctx A) b -> Term
 
   ||| The term is a type in the context
   public data IsType : Context -> Term -> Type where

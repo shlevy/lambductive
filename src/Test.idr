@@ -6,13 +6,13 @@ module Test
 import Lambductive
 
 ||| |- U type
-universeIsAType : IsType Nil U
+universeIsAType : IsType Empty U
 universeIsAType = UIsType
 
 ||| code : U |- El(code) type
-interpretedUniverseElementIsAType : (code: HasType {ctx = Nil} {type = U} x u) -> IsType Nil (El code)
+interpretedUniverseElementIsAType : (code: HasType {ctx = Empty} {type = U} x u) -> IsType Empty (El code)
 interpretedUniverseElementIsAType code = ElIsType {code = code}
 
-||| A Type, B Type -> Pi(A, B) type
-piFormsAType : (A : IsType Nil a) -> (B: IsType Nil b) -> IsType Nil (Pi A B)
+||| A Type |- B Type -> Pi(A, B) type
+piFormsAType : (A : IsType Empty a) -> (B: IsType (Snoc Empty A) b) -> IsType Empty (Pi A B)
 piFormsAType A B = PiIsType {a = A} {b = B}
