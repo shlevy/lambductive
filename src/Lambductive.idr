@@ -8,6 +8,8 @@ mutual
     U : Term
     ||| The universe interpretation operator
     El : (HasType {ctx = ctx} {type = U} term u) -> Term
+    ||| The pi type former
+    Pi : IsType ctx a -> IsType ctx b -> Term
 
   ||| Judgment context
   public data Context : Type where
@@ -20,6 +22,8 @@ mutual
     UIsType : IsType ctx U
     ||| |_ |- code : U -> |_ El(code) Type
     ElIsType : IsType ctx (El {ctx = ctx} code)
+    ||| |_ A Type, |_ B Type -> Pi(A, B) Type
+    PiIsType : IsType ctx (Pi {ctx = ctx} a b)
 
   ||| The term has the given type in the context
   public data HasType : Term -> (IsType ctx type) -> Type where

@@ -12,3 +12,7 @@ universeIsAType = UIsType
 ||| code : U |- El(code) type
 interpretedUniverseElementIsAType : (code: HasType {ctx = Nil} {type = U} x u) -> IsType Nil (El code)
 interpretedUniverseElementIsAType code = ElIsType {code = code}
+
+||| A Type, B Type -> Pi(A, B) type
+piFormsAType : (A : IsType Nil a) -> (B: IsType Nil b) -> IsType Nil (Pi A B)
+piFormsAType A B = PiIsType {a = A} {b = B}
