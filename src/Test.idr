@@ -5,10 +5,10 @@ module Test
 
 import Lambductive
 
-||| The base universe is a type
-universeIsAType : IsType U
+||| |- U type
+universeIsAType : IsType Nil U
 universeIsAType = UIsType
 
-||| Given an element of the base universe, we can interpret it as a type
-interpretedUniverseElementIsAType : (code: HasType {type = U} x u) -> IsType (El code)
+||| code : U |- El(code) type
+interpretedUniverseElementIsAType : (code: HasType {ctx = Nil} {type = U} x u) -> IsType Nil (El code)
 interpretedUniverseElementIsAType code = ElIsType {code = code}
