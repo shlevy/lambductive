@@ -24,6 +24,19 @@ drop : (n : Nat) -> Context (n + m) -> Context m
 drop Z ctx = ctx
 drop (S k) (Snoc ctx _) = drop k ctx
 
+data ValueTerm : TypeTerm ctx -> Type
+
+||| Γ |- X Type
+||| @ ctx The context in which the term is a type
+public data TypeTerm : (ctx : Context n) -> Type where
+  ||| Γ |- U Type
+  U : TypeTerm ctx
+  ||| Γ |- code : U -> Γ |- (Interpret code) Type
+  ||| @ code The type code to interpret
+  Interpret : (code : ValueTerm {ctx} U) -> TypeTerm ctx
+  ||| Γ |- A Type -> (a : A) :: Γ |- B Type -> Γ |- Pi A B Type
+  Pi : (A : TypeTerm ctx) -> TypeTerm (Snoc ctx A) -> TypeTerm ctx
+
 ||| Insert a variable into a context
 ||| @ n The offset to insert the variable at
 ||| @ ctx The context to insert into
@@ -31,69 +44,55 @@ drop (S k) (Snoc ctx _) = drop k ctx
 public
 insertAt : (n : Nat) -> (ctx : Context (n + m)) -> (type : TypeTerm (drop n ctx)) -> Context (S (n + m))
 
-data ValueTerm : TypeTerm ctx -> Type
+||| Γ |- A Type -> (insertAt n Γ B) |- (succType A) Type
+||| @ idx The index of the new variable in the new context
+||| @ type The type to lift into the new context
+public
+succType : (idx : Nat) -> (type : TypeTerm ctx) -> TypeTerm (insertAt idx ctx newType)
 
-||| Γ |- X Type
-||| @ ctx The context in which the term is a type
-public data TypeTerm : (ctx : Context n) -> Type where
-  ||| Γ |- A Type -> (insertAt n Γ B) |- (SuccType A) Type
-  ||| @ type The type to lift into the new context
-  SuccType : (type : TypeTerm ctx) -> TypeTerm (insertAt {m = m} n ctx type2)
-  ||| Γ |- U Type
-  U : TypeTerm ctx
-  ||| Γ |- code : U -> Γ |- (Interpret code) Type
-  ||| @ code The type code to interpret
-  Interpret : (code : ValueTerm {ctx = ctx} U) -> TypeTerm ctx
-  ||| Γ |- A Type -> (a : A) :: Γ |- B Type -> Γ |- Pi A B Type
-  Pi : (A : TypeTerm ctx) -> TypeTerm (Snoc ctx A) -> TypeTerm ctx
+||| Γ |- a : A -> (insertAt n Γ B) |- (succValue a) : (succType A)
+||| @ idx The index of the new variable in the new context
+||| @ value The value to lift into the new context
+public
+succValue : (idx : Nat) -> {ctx : Context (idx + m)} -> {type : TypeTerm ctx} -> (value : ValueTerm type) -> ValueTerm (succType idx type)
 
 insertAt Z ctx type = Snoc ctx type
-insertAt (S k) (Snoc ctx head) type = Snoc (insertAt k ctx type) (SuccType head)
+insertAt (S k) (Snoc ctx head) type = Snoc (insertAt k ctx type) (assert_total (succType k head))
+
+succUIsU : succType n U = U
+
+succType n U = U
+succType n (Interpret code) = Interpret (assert_total (replace succUIsU (succValue n code)))
+succType n (Pi a b) = Pi (succType n a) (succType (S n) b)
+
+succUIsU = Refl
 
 ||| Extract a variable from a context
 ||| @ n The variable index
 ||| @ ctx The context
 public
 index : (n : Nat) -> (ctx : Context (S (n + m))) -> TypeTerm ctx
-index Z (Snoc _ type) = SuccType {n = Z} type
-index (S k) (Snoc ctx _) = SuccType {n = Z} (index k ctx)
-
-data TypeEquivalence : TypeTerm ctx -> TypeTerm ctx -> Type
+index Z (Snoc _ type) = succType Z type
+index (S k) (Snoc ctx _) = succType Z (index k ctx)
 
 ||| Γ |- X type -> Γ |- (x : X)
 ||| @ type The type of the value
-public data ValueTerm : (type : TypeTerm ctx) -> Type where
-  ||| Γ |- a : A -> (insertAt n Γ B) |- (SuccValue a) : (SuccType A)
-  ||| @ value The value to lift into the new context
-  SuccValue : (value: ValueTerm type) -> ValueTerm (SuccType type)
-  ||| Γ |- A = B Type -> Γ |- a : A -> Γ |- a : B
-  ||| @ prf The proof of equivalence
-  ||| @ value The value whose type we want to transport
-  TransportType : (prf : TypeEquivalence type1 type2) -> (value : ValueTerm type1) -> ValueTerm type2
+public data ValueTerm : {ctx : Context n} -> (type : TypeTerm ctx) -> Type where
   ||| Γ |- (Var idx) : (index idx Γ)
   ||| @ idx The de Bruijn index to look up
   Var : (idx : Nat) -> ValueTerm (index idx ctx)
 
-||| insertAt (n + 1) ((a : A) :: Γ) B = (a : SuccType A) :: (insertAt n Γ B)
-insertAtPiLemma : insertAt (S n) (Snoc ctx a) type = Snoc (insertAt n ctx type) (SuccType a)
-insertAtPiLemma = Refl
+succValue n {m} with (plus n m)
+  | _ = ?hole
 
-||| Γ |- A Type -> Γ |- B Type -> Γ |- A = B Type
-||| @ type1 The LHS type
-||| @ type2 The RHS type
-public data TypeEquivalence : (type1 : TypeTerm ctx) -> (type2 : TypeTerm ctx) -> Type where
-  ||| Γ |- A = A Type
-  TypeEquivalenceRefl : TypeEquivalence a a
-  ||| Γ |- A = B Type -> Γ |- B = A Type
-  ||| @ prf The proof of equivalence
-  TypeEquivalenceSym : (prf : TypeEquivalence a b) -> TypeEquivalence b a
-  ||| Γ |- A = B Type -> Γ |- B = C Type -> Γ |- A = C Type
-  ||| @ proof1 The first proof of equivalence
-  ||| @ proof2 The second proof of equivalence
-  TypeEquivalenceTrans : (proof1 : TypeEquivalence a b) -> (proof2 : TypeEquivalence b c) -> TypeEquivalence a c
-  ||| Γ |- SuccType U = U Type
-  SuccU : TypeEquivalence (SuccType U) U
-  ||| Γ |- SuccType (Interpret code) = Interpret (SuccValue code) Type
-  SuccInterpret : TypeEquivalence (SuccType (Interpret code)) (Interpret (TransportType SuccU (SuccValue code)))
-  ||| Γ |- SuccType (Pi A B) = Pi (SuccType A) (SuccType B)
-  SuccPi : TypeEquivalence (SuccType (Pi a b)) (Pi (SuccType {n = n} {m = m} a) (replace (insertAtPiLemma {a = a}) (SuccType {n = S n} {m = m} b)))
+{-
+data SuccValueView : Nat -> ValueTerm type -> Type where
+  SuccValueViewS : {ctx : Context (S (plus idx m))} -> SuccValueView (S (plus idx m)) (Var {ctx} idx)
+
+succValueView : {sum : Nat} -> {ctx : Context sum} -> {type : TypeTerm ctx} -> (v: ValueTerm type) -> SuccValueView sum v
+succValueView (Var idx) = SuccValueViewS
+
+succValue n {m} {ctx} v with (plus n m)
+  | sum with (succValueView v)
+    succValue n {m} (Var idx) | (S (plus idx _)) | SuccValueViewS = ?hole
+-}
