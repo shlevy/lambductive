@@ -18,7 +18,7 @@ public data Judgment : (context : Context) -> Type where
   JudgmentType : Judgment context
   ||| Γ |- T Type -> superset(Γ) |- t : T
   ||| @ type The type of the value
-  JudgmentValue : (type: Term typeContext JudgmentType) -> .{auto prf : Contains valueContext typeContext} -> Judgment valueContext
+  JudgmentValue : (type : Term typeContext JudgmentType) -> .{auto prf : Contains valueContext typeContext} -> Judgment valueContext
 
 ||| Alias for terms that are types
 ||| @ context The context of the term
@@ -56,10 +56,9 @@ public data Contains : (superset : Context) -> (subset : Context) -> Type where
   ContainsCons : (type : TypeTerm typeContext) -> (recursiveProof : Contains context1 context2) -> .{auto prf : Contains context1 typeContext} -> Contains (type :: context1) context2
 
 ||| Any context contains the empty context
-||| @ context The context containing the empty context
 public
 containsNil : Contains context []
-containsNil {context=Nil} = ContainsSelf
+containsNil {context = Nil} = ContainsSelf
 containsNil {context = type :: _} = ContainsCons type containsNil
 
 ||| Terms
