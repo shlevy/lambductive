@@ -44,8 +44,7 @@ public data Context : Type where
 
 ||| A context contains another context
 |||
-||| Any term or judgment in a subset can be referenced by a term or judgment in the superset. This allows us to forgo an explicit "succ" function lifting terms and judgments into contexts with
-||| new variables.
+||| Any term or judgment in a subset can be referenced by a term or judgment in the superset. This allows us to forgo a function lifting terms and judgments into contexts with new variables.
 ||| @ superset The containing context
 ||| @ subset The contained context
 public data Contains : (superset : Context) -> (subset : Context) -> Type where
