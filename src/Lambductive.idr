@@ -66,3 +66,6 @@ containsNil {context = type :: _} = ContainsCons type containsNil
 ||| @ context The context of the term
 ||| @ judgment The judgment carried by the term
 public data Term : (context : Context) -> (judgment : Judgment context) -> Type where
+  -- Universes
+  ||| [] |- U Type
+  U : TypeTerm []
