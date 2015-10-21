@@ -25,13 +25,15 @@ printTermLookup : Term -> Eff () [STATE (SortedMap Term String), STDIO]
 printTermLookup term = do
   case (lookup term !get) of
     Nothing => printTerm term
-    Just n => putStr n
+    Just n => do
+      putStr "\\mathsf{"
+      putStr n
+      putStr "}"
 
 printTermTopLevel : Term -> Eff () [STATE (SortedMap Term String), STDIO]
 printTermTopLevel term = do
-  putStr "("
   printTermLookup term
-  putStrLn "\\ Type) \\\\"
+  putStrLn "\\ \\mathsf{Type} \\\\"
 
 printCollection : Collection -> Eff () [STATE (SortedMap Term String), STDIO, EXCEPTION String]
 printCollection [] = pure ()
@@ -40,8 +42,9 @@ printCollection ((term, Just name) :: tail) = do
   case (lookup term m) of
     Just _ => raise "Duplicate term attempted!"
     Nothing => do
+      putStr "\\mathsf{"
       putStr name
-      putStr " \\equiv "
+      putStr "} \\equiv "
       printTermTopLevel term
       put (insert term name m)
       printCollection tail
