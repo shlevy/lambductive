@@ -13,8 +13,19 @@ data Term : Type where
   ||| @ level The universe's level.
   U : .(level : Nat) -> Term
 
-||| A proof of the well-formedness of the term
+||| Judgments about terms
 public
-data WellFormed : Term -> Type where
-  ||| Universes are well-formed types
-  UType : WellFormed (U level)
+data Judgment : Type where
+  ||| The term is a type
+  JudgmentType : Judgment
+  ||| The term is a value
+  ||| @ type The type of the value
+  JudgmentValue : (type : Term) -> Judgment
+
+||| A proof of the validity of a judgment
+||| @ term The term we're judging
+||| @ judgment The judgment whose validity we're proving
+public
+data ValidJudgment : (term : Term) -> (judgment : Judgment) -> Type where
+  ||| Universes are types
+  UType : ValidJudgment (U level) JudgmentType

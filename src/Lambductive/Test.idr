@@ -9,22 +9,16 @@ import Data.SortedMap
 
 import Lambductive.Core
 
-data WellFormedTerm : Type where
-  MkWellFormedTerm : WellFormed term -> WellFormedTerm
+instance Eq Term where
+  (U _) == (U _) = True
 
-instance Eq WellFormedTerm where
-  (MkWellFormedTerm UType) == (MkWellFormedTerm UType) = True
+instance Ord Term where
+  compare (U _) (U _) = EQ
 
-instance Ord WellFormedTerm where
-  compare (MkWellFormedTerm UType) (MkWellFormedTerm UType) = EQ
+printTerm : Term -> Eff () [STDIO]
+printTerm (U _) = putStr "\\mathcal{U}"
 
-Collection : Type
-Collection = List (WellFormedTerm, Maybe String)
-
-printTerm : WellFormedTerm -> Eff () [STDIO]
-printTerm (MkWellFormedTerm UType) = putStr "\\mathcal{U}"
-
-printTermLookup : WellFormedTerm -> Eff () [STATE (SortedMap WellFormedTerm String), STDIO]
+printTermLookup : Term -> Eff () [STATE (SortedMap Term String), STDIO]
 printTermLookup term = do
   case (lookup term !get) of
     Nothing => printTerm term
@@ -33,14 +27,25 @@ printTermLookup term = do
       putStr n
       putStr "}"
 
-printTermTopLevel : WellFormedTerm -> Eff () [STATE (SortedMap WellFormedTerm String), STDIO]
-printTermTopLevel term = do
-  printTermLookup term
-  putStrLn "\\ \\mathsf{Type} \\\\"
+data Valid : Type where
+  MkValid : {term : Term} -> {judgment : Judgment} -> ValidJudgment term judgment -> Valid
 
-printCollection : Collection -> Eff () [STATE (SortedMap WellFormedTerm String), STDIO, EXCEPTION String]
+Collection : Type
+Collection = List (Valid, Maybe String)
+
+printTermTopLevel : Valid -> Eff () [STATE (SortedMap Term String), STDIO]
+printTermTopLevel (MkValid {judgment} {term} _) = do
+  printTermLookup term
+  case judgment of
+    JudgmentType => putStrLn "\\ \\mathsf{Type} \\\\"
+    JudgmentValue type => do
+      putStr "\\ :\\ "
+      printTerm type
+      putStrLn " \\\\"
+
+printCollection : Collection -> Eff () [STATE (SortedMap Term String), STDIO, EXCEPTION String]
 printCollection [] = pure ()
-printCollection ((term, Just name) :: tail) = do
+printCollection ((MkValid {term} prf, Just name) :: tail) = do
   m <- get
   case (lookup term m) of
     Just _ => raise "Duplicate term attempted!"
@@ -48,7 +53,7 @@ printCollection ((term, Just name) :: tail) = do
       putStr "\\mathsf{"
       putStr name
       putStr "} \\equiv "
-      printTermTopLevel term
+      printTermTopLevel (MkValid prf)
       put (insert term name m)
       printCollection tail
 printCollection ((term, Nothing) :: tail) = do
@@ -56,9 +61,9 @@ printCollection ((term, Nothing) :: tail) = do
   printCollection tail
 
 simpleCollection : Collection
-simpleCollection = [(MkWellFormedTerm (UType {level=Z}), Nothing), (MkWellFormedTerm (UType {level=Z}), Just "myU"), (MkWellFormedTerm (UType {level=Z}), Nothing)]
+simpleCollection = [(MkValid (UType {level=Z}), Nothing), (MkValid (UType {level=Z}), Just "myU"), (MkValid (UType {level=Z}), Nothing)]
 
-instance Default (SortedMap WellFormedTerm String) where
+instance Default (SortedMap Term String) where
   default = empty
 
 public
