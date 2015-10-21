@@ -10,16 +10,16 @@ import Data.SortedMap
 import Lambductive.Core
 
 instance Eq Term where
-  U == U = True
+  (U _) == (U _) = True
 
 instance Ord Term where
-  compare U U = EQ
+  compare (U _) (U _) = EQ
 
 Collection : Type
 Collection = List (Term, Maybe String)
 
 printTerm : Term -> Eff () [STDIO]
-printTerm U = putStr "\\mathcal{U}"
+printTerm (U _) = putStr "\\mathcal{U}"
 
 printTermLookup : Term -> Eff () [STATE (SortedMap Term String), STDIO]
 printTermLookup term = do
@@ -50,7 +50,7 @@ printCollection ((term, Nothing) :: tail) = do
   printCollection tail
 
 simpleCollection : Collection
-simpleCollection = [(U, Nothing), (U, Just "myU"), (U, Nothing)]
+simpleCollection = [(U Z, Nothing), (U Z, Just "myU"), (U Z, Nothing)]
 
 instance Default (SortedMap Term String) where
   default = empty
