@@ -1,4 +1,8 @@
 package lambductive
 
 sourcedir = src
-modules = Lambductive
+modules = Lambductive.Core, Lambductive.Test
+tests = Test.simpleTest
+
+opts = "--warnreach"
+pkgs = effects, contrib
