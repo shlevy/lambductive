@@ -12,3 +12,9 @@ data Term : Type where
   ||| we don't care about what universe we're talking about
   ||| @ level The universe's level.
   U : .(level : Nat) -> Term
+
+||| A proof of the well-formedness of the term
+public
+data WellFormed : Term -> Type where
+  ||| Universes are well-formed types
+  UType : WellFormed (U level)

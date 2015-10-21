@@ -9,19 +9,22 @@ import Data.SortedMap
 
 import Lambductive.Core
 
-instance Eq Term where
-  (U _) == (U _) = True
+data WellFormedTerm : Type where
+  MkWellFormedTerm : WellFormed term -> WellFormedTerm
 
-instance Ord Term where
-  compare (U _) (U _) = EQ
+instance Eq WellFormedTerm where
+  (MkWellFormedTerm UType) == (MkWellFormedTerm UType) = True
+
+instance Ord WellFormedTerm where
+  compare (MkWellFormedTerm UType) (MkWellFormedTerm UType) = EQ
 
 Collection : Type
-Collection = List (Term, Maybe String)
+Collection = List (WellFormedTerm, Maybe String)
 
-printTerm : Term -> Eff () [STDIO]
-printTerm (U _) = putStr "\\mathcal{U}"
+printTerm : WellFormedTerm -> Eff () [STDIO]
+printTerm (MkWellFormedTerm UType) = putStr "\\mathcal{U}"
 
-printTermLookup : Term -> Eff () [STATE (SortedMap Term String), STDIO]
+printTermLookup : WellFormedTerm -> Eff () [STATE (SortedMap WellFormedTerm String), STDIO]
 printTermLookup term = do
   case (lookup term !get) of
     Nothing => printTerm term
@@ -30,12 +33,12 @@ printTermLookup term = do
       putStr n
       putStr "}"
 
-printTermTopLevel : Term -> Eff () [STATE (SortedMap Term String), STDIO]
+printTermTopLevel : WellFormedTerm -> Eff () [STATE (SortedMap WellFormedTerm String), STDIO]
 printTermTopLevel term = do
   printTermLookup term
   putStrLn "\\ \\mathsf{Type} \\\\"
 
-printCollection : Collection -> Eff () [STATE (SortedMap Term String), STDIO, EXCEPTION String]
+printCollection : Collection -> Eff () [STATE (SortedMap WellFormedTerm String), STDIO, EXCEPTION String]
 printCollection [] = pure ()
 printCollection ((term, Just name) :: tail) = do
   m <- get
@@ -53,11 +56,12 @@ printCollection ((term, Nothing) :: tail) = do
   printCollection tail
 
 simpleCollection : Collection
-simpleCollection = [(U Z, Nothing), (U Z, Just "myU"), (U Z, Nothing)]
+simpleCollection = [(MkWellFormedTerm (UType {level=Z}), Nothing), (MkWellFormedTerm (UType {level=Z}), Just "myU"), (MkWellFormedTerm (UType {level=Z}), Nothing)]
 
-instance Default (SortedMap Term String) where
+instance Default (SortedMap WellFormedTerm String) where
   default = empty
 
+public
 simpleTest : IO ()
 simpleTest = do
   run (printCollection simpleCollection)
