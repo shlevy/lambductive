@@ -15,7 +15,14 @@ data ContainsAxiom : (term : Term) -> Type where
 ||| @ term The term we're checking for an axiom
 containsAxiom : (term : Term) -> Dec (ContainsAxiom term)
 containsAxiom (Axiom name) = Yes ContainsAxiomAxiom
-containsAxiom (U level) = No universeNotContainsAxiom
-  where
-    universeNotContainsAxiom : Not (ContainsAxiom (U level))
-    universeNotContainsAxiom ContainsAxiomAxiom impossible
+containsAxiom (U level) = No universeNotContainsAxiom where
+  universeNotContainsAxiom ContainsAxiomAxiom impossible
+
+||| A decision procedure for validity
+||| @ term The term we're deciding about
+||| @ judgment The judgment we're deciding about
+validJudgment : (term : Term) -> (judgment : Judgment) -> Dec (ValidJudgment term judgment)
+validJudgment (Axiom name) judgment = Yes (AxiomAny name judgment)
+validJudgment (U _) JudgmentType = Yes UType
+validJudgment (U _) (JudgmentValue _) = No universeNotValue where
+   universeNotValue UType impossible
