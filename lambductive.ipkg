@@ -1,7 +1,7 @@
 package lambductive
 
 sourcedir = src
-modules = Lambductive.Core, Lambductive.Test
+modules = Lambductive.Core, Lambductive.Test, Lambductive.Proof
 tests = Test.universeTest, Test.axiomTest
 main = Lambductive.Core
 
