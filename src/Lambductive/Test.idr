@@ -9,14 +9,25 @@ import Data.SortedMap
 
 import Lambductive.Core
 
+%default total
+
 instance Eq Term where
   (U _) == (U _) = True
+  (Axiom name1) == (Axiom name2) = name1 == name2
+  _ == _ = False
 
 instance Ord Term where
   compare (U _) (U _) = EQ
+  compare (Axiom name1) (Axiom name2) = compare name1 name2
+  compare (Axiom _) (U _) = LT
+  compare (U _) (Axiom _) = GT
 
 printTerm : Term -> Eff () [STDIO]
 printTerm (U _) = putStr "\\mathcal{U}"
+printTerm (Axiom name) = do
+  putStr "\\mathbf{"
+  putStr name
+  putStr "}"
 
 printTermLookup : Term -> Eff () [STATE (SortedMap Term String), STDIO]
 printTermLookup term = do
@@ -60,13 +71,19 @@ printCollection ((term, Nothing) :: tail) = do
   printTermTopLevel term
   printCollection tail
 
-simpleCollection : Collection
-simpleCollection = [(MkValid (UType {level=Z}), Nothing), (MkValid (UType {level=Z}), Just "myU"), (MkValid (UType {level=Z}), Nothing)]
+universeCollection : Collection
+universeCollection = [(MkValid (UType {level=Z}), Nothing), (MkValid (UType {level=Z}), Just "myU"), (MkValid (UType {level=Z}), Nothing)]
 
 instance Default (SortedMap Term String) where
   default = empty
 
 public
-simpleTest : IO ()
-simpleTest = do
-  run (printCollection simpleCollection)
+universeTest : IO ()
+universeTest = run (printCollection universeCollection)
+
+axiomCollection : Collection
+axiomCollection = [(MkValid (AxiomAny "Foo" JudgmentType), Nothing), (MkValid (AxiomAny "foo" (JudgmentValue (Axiom "Foo"))), Nothing)]
+
+public
+axiomTest : IO ()
+axiomTest = run (printCollection axiomCollection)

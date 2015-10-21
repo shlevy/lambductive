@@ -12,6 +12,9 @@ data Term : Type where
   ||| we don't care about what universe we're talking about
   ||| @ level The universe's level.
   U : .(level : Nat) -> Term
+  ||| An asserted axiom
+  ||| @ name The name of the axiom
+  Axiom : (name : String) -> Term
 
 ||| Judgments about terms
 public
@@ -29,3 +32,7 @@ public
 data ValidJudgment : (term : Term) -> (judgment : Judgment) -> Type where
   ||| Universes are types
   UType : ValidJudgment (U level) JudgmentType
+  ||| Axioms are what you say they are
+  ||| @ name The name of the axiom
+  ||| @ judgment The judgment you're asserting about the axiom
+  AxiomAny : (name : String) -> (judgment : Judgment) -> ValidJudgment (Axiom name) judgment
