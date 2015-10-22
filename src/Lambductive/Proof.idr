@@ -35,6 +35,6 @@ validJudgment (UCode _) (JudgmentValue (Axiom _)) = No universeCodeNotAxiom wher
 validJudgment (UCode _) (JudgmentValue (UCode _)) = No universeCodeNotUniverseCode where
   universeCodeNotUniverseCode UCodeU impossible
 validJudgment (UCode level1) (JudgmentValue (U level2)) with (decEq (S level1) level2)
-  | Yes p = Yes (replace {P = \l => ValidJudgment (UCode level1) (JudgmentValue (U l))} p UCodeU)
+  validJudgment (UCode level1) (JudgmentValue (U _)) | Yes Refl = Yes UCodeU
   | No p = No (universeCodeNotInNotSuccUniverse level1 level2 p) where
     universeCodeNotInNotSuccUniverse _ _ p (UCodeU) = p Refl
