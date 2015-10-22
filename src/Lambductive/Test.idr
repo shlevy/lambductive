@@ -12,18 +12,31 @@ import Lambductive.Core
 %default total
 
 instance Eq Term where
-  (U _) == (U _) = True
+  (U n) == (U m) = n == m
   (Axiom name1) == (Axiom name2) = name1 == name2
+  (UCode n) == (UCode m) = n == m
   _ == _ = False
 
 instance Ord Term where
-  compare (U _) (U _) = EQ
+  compare (U n) (U m) = compare n m
   compare (Axiom name1) (Axiom name2) = compare name1 name2
+  compare (UCode n) (UCode m) = compare n m
   compare (Axiom _) (U _) = LT
+  compare (Axiom _) (UCode _) = LT
+  compare (U _) (UCode _) = LT
   compare (U _) (Axiom _) = GT
+  compare (UCode _) (Axiom _) = GT
+  compare (UCode _) (U _) = GT
 
 printTerm : Term -> Eff () [STDIO]
-printTerm (U _) = putStr "\\mathcal{U}"
+printTerm (U n) = do
+  putStr "\\mathcal{U}_{"
+  putStr (show n)
+  putStr "}"
+printTerm (UCode n) = do
+  putStr "\\mathcal{u}_{"
+  putStr (show n)
+  putStr "}"
 printTerm (Axiom name) = do
   putStr "\\mathbf{"
   putStr name
@@ -93,3 +106,13 @@ axiomCollection = [(MkValid fooAxiomType, Nothing), (MkValid fooAxiomValue, Noth
 public
 axiomTest : IO ()
 axiomTest = run (printCollection axiomCollection)
+
+uCodeZ : ValidJudgment (UCode Z) (JudgmentValue (U (S Z)))
+uCodeZ = UCodeU
+
+universeCodeCollection : Collection
+universeCodeCollection = [(MkValid uCodeZ, Nothing)]
+
+public
+uCodeTest : IO ()
+uCodeTest = run (printCollection universeCodeCollection)

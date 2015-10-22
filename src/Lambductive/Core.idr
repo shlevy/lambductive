@@ -7,11 +7,14 @@ module Lambductive.Core
 public
 data Term : Type where
   ||| Tarski-style universe
-  ||| @ level The universe's level.
+  ||| @ level The universe's level
   U : (level : Nat) -> Term
   ||| An asserted axiom
   ||| @ name The name of the axiom
   Axiom : (name : String) -> Term
+  ||| Type code for universe
+  ||| @ level The universe's level
+  UCode : (level : Nat) -> Term
 
 ||| Judgments about terms
 public
@@ -33,3 +36,5 @@ data ValidJudgment : (term : Term) -> (judgment : Judgment) -> Type where
   ||| @ name The name of the axiom
   ||| @ judgment The judgment you're asserting about the axiom
   AxiomAny : ValidJudgment (Axiom name) judgment
+  ||| Universe codes are elements of the next universe
+  UCodeU : ValidJudgment (UCode level) (JudgmentValue (U (S level)))
