@@ -41,10 +41,10 @@ liftCodeView (S n) (S m) with (liftCodeView n m)
   | NotSum contra = NotSum succNotSumNotSum where
     succNotSumNotSum l prf = contra l (succInjective m (S (plus n l)) prf)
 
-decomposeLevel : ValidJudgment (LiftCode lift term) (JudgmentValue (U level)) -> Exists (\level1 => level = S (plus lift level1))
-decomposeLevel (LiftCodeU (AxiomAny {judgment = JudgmentValue (U level)})) = Evidence level Refl
-decomposeLevel (LiftCodeU (UCodeU {level})) = Evidence (S level) Refl
-decomposeLevel (LiftCodeU (LiftCodeU {lift} {level} term)) = Evidence (S (plus lift level)) Refl
+decomposeLevel : ValidJudgment (LiftCode lift term) (JudgmentValue (U level)) -> (level1 ** level = S (plus lift level1))
+decomposeLevel (LiftCodeU (AxiomAny {judgment = JudgmentValue (U level)})) = (level ** Refl)
+decomposeLevel (LiftCodeU (UCodeU {level})) = ((S level) ** Refl)
+decomposeLevel (LiftCodeU (LiftCodeU {lift} {level} term)) = ((S (plus lift level)) ** Refl)
 
 ||| A decision procedure for validity
 ||| @ term The term we're deciding about
@@ -83,4 +83,4 @@ validJudgment (LiftCode lift term) (JudgmentValue (U level)) with (liftCodeView 
         liftCodeNotUNotU lift level contra (LiftCodeU {lift} {level} judgment1) | (plus lift level) = contra judgment1
   | NotSum contra = No (liftCodeNotSmallU lift level contra) where
     liftCodeNotSmallU lift level contra judgment with (decomposeLevel judgment)
-      liftCodeNotSmallU lift (S (plus lift level1)) contra judgment | Evidence level1 Refl = contra level1 Refl
+      liftCodeNotSmallU lift (S (plus lift level1)) contra judgment | (level1 ** Refl) = contra level1 Refl
