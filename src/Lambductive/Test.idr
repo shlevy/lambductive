@@ -43,7 +43,7 @@ printTerm (UCode n) = do
   putStr "}"
 printTerm (LiftCode n code) = do
   putStr "\\mathsf{Lift}_{"
-  putStr (show (S n))
+  putStr (show n)
   putStr "} ("
   printTermLookup code
   putStr ")"
@@ -110,7 +110,7 @@ uCodeTest : IO ()
 uCodeTest = run (printCollection universeCodeCollection)
 
 liftCodeCollection : Collection
-liftCodeCollection = [(MkValid (LiftCodeU {lift=Z} uCodeZ), Nothing)]
+liftCodeCollection = [(MkValid (LiftCodeU uCodeZ), Nothing)]
 
 public
 liftCodeTest : IO ()
