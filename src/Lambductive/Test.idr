@@ -13,29 +13,21 @@ import Lambductive.Core
 
 instance Eq Term where
   (U n) == (U m) = n == m
-  (Axiom name1) == (Axiom name2) = name1 == name2
   (UCode n) == (UCode m) = n == m
   (LiftCode n t1) == (LiftCode m t2) = n == m && t1 == t2
   _ == _ = False
 
 instance Ord Term where
   compare (U n) (U m) = compare n m
-  compare (Axiom name1) (Axiom name2) = compare name1 name2
   compare (UCode n) (UCode m) = compare n m
   compare (LiftCode n t1) (LiftCode m t2) = case (compare n m) of
     EQ => compare t1 t2
     x  => x
-  compare (Axiom _) (U _) = LT
-  compare (Axiom _) (UCode _) = LT
-  compare (Axiom _) (LiftCode _ _) = LT
   compare (U _) (UCode _) = LT
   compare (U _) (LiftCode _ _) = LT
-  compare (U _) (Axiom _) = GT
   compare (UCode _) (LiftCode _ _) = LT
-  compare (UCode _) (Axiom _) = GT
   compare (UCode _) (U _) = GT
   compare (LiftCode _ _) (UCode _) = GT
-  compare (LiftCode _ _) (Axiom _) = GT
   compare (LiftCode _ _) (U _) = GT
 
 printTermLookup : Term -> Eff () [STATE (SortedMap Term String), STDIO]
@@ -48,10 +40,6 @@ printTerm (U n) = do
 printTerm (UCode n) = do
   putStr "\\mathcal{u}_{"
   putStr (show n)
-  putStr "}"
-printTerm (Axiom name) = do
-  putStr "\\mathbf{"
-  putStr name
   putStr "}"
 printTerm (LiftCode n code) = do
   putStr "\\mathsf{Lift}_{"
@@ -110,19 +98,6 @@ instance Default (SortedMap Term String) where
 public
 universeTest : IO ()
 universeTest = run (printCollection universeCollection)
-
-fooAxiomType : ValidJudgment (Axiom "Foo") JudgmentType
-fooAxiomType = AxiomAny
-
-fooAxiomValue : ValidJudgment (Axiom "foo") (JudgmentValue (Axiom "Foo"))
-fooAxiomValue = AxiomAny
-
-axiomCollection : Collection
-axiomCollection = [(MkValid fooAxiomType, Nothing), (MkValid fooAxiomValue, Nothing)]
-
-public
-axiomTest : IO ()
-axiomTest = run (printCollection axiomCollection)
 
 uCodeZ : ValidJudgment (UCode Z) (JudgmentValue (U (S Z)))
 uCodeZ = UCodeU

@@ -5,29 +5,6 @@ import Lambductive.Core
 
 %default total
 
-||| A proof that a term contains an axiom
-||| @ term The term that contains an axiom
-public
-data ContainsAxiom : (term : Term) -> Type where
-  ||| An axiom contains an axiom
-  ContainsAxiomAxiom : ContainsAxiom (Axiom name)
-  ||| If a code contains an axiom, that code lifted contains an axiom
-  ContainsAxiomLiftAxiom : ContainsAxiom code -> ContainsAxiom (LiftCode _ code)
-
-||| A decision procedure for `ContainsAxiom`
-||| @ term The term we're checking for an axiom
-public
-containsAxiom : (term : Term) -> Dec (ContainsAxiom term)
-containsAxiom (Axiom _) = Yes ContainsAxiomAxiom
-containsAxiom (U _) = No universeNotContainsAxiom where
-  universeNotContainsAxiom ContainsAxiomAxiom impossible
-containsAxiom (UCode _) = No universeCodeNotContainsAxiom where
-  universeCodeNotContainsAxiom ContainsAxiomAxiom impossible
-containsAxiom (LiftCode _ term) with (containsAxiom term)
-  | Yes contains = Yes (ContainsAxiomLiftAxiom contains)
-  | No contra = No liftNotAxiomNotContainsAxiom where
-    liftNotAxiomNotContainsAxiom (ContainsAxiomLiftAxiom contains) = contra contains
-
 data LiftCodeView : Nat -> Nat -> Type where
   Sum : (level : Nat) -> LiftCodeView lift (S (lift + level))
   NotSum : (contra : (level1 : Nat) -> Not (level = S (lift + level1))) -> LiftCodeView lift level
@@ -42,7 +19,6 @@ liftCodeView (S n) (S m) with (liftCodeView n m)
     succNotSumNotSum l prf = contra l (succInjective m (S (plus n l)) prf)
 
 decomposeLevel : ValidJudgment (LiftCode lift term) (JudgmentValue (U level)) -> (level1 ** level = S (plus lift level1))
-decomposeLevel (LiftCodeU (AxiomAny {judgment = JudgmentValue (U level)})) = (level ** Refl)
 decomposeLevel (LiftCodeU (UCodeU {level})) = ((S level) ** Refl)
 decomposeLevel (LiftCodeU (LiftCodeU {lift} {level} term)) = ((S (plus lift level)) ** Refl)
 
@@ -51,14 +27,11 @@ decomposeLevel (LiftCodeU (LiftCodeU {lift} {level} term)) = ((S (plus lift leve
 ||| @ judgment The judgment we're deciding about
 public
 validJudgment : (term : Term) -> (judgment : Judgment) -> Dec (ValidJudgment term judgment)
-validJudgment (Axiom _) judgment = Yes AxiomAny
 validJudgment (U _) JudgmentType = Yes UType
 validJudgment (U _) (JudgmentValue _) = No universeNotValue where
   universeNotValue UType impossible
 validJudgment (UCode _) JudgmentType = No universeCodeNotType where
   universeCodeNotType UType impossible
-validJudgment (UCode _) (JudgmentValue (Axiom _)) = No universeCodeNotAxiom where
-  universeCodeNotAxiom AxiomAny impossible
 validJudgment (UCode _) (JudgmentValue (UCode _)) = No universeCodeNotUniverseCode where
   universeCodeNotUniverseCode UCodeU impossible
 validJudgment (UCode _) (JudgmentValue (LiftCode _ _)) = No universeCodeNotLiftCode where
@@ -69,8 +42,6 @@ validJudgment (UCode level1) (JudgmentValue (U level2)) with (decEq (S level1) l
     universeCodeNotInNotSuccUniverse _ _ contra (UCodeU) = contra Refl
 validJudgment (LiftCode _ _) JudgmentType = No liftCodeNotType where
   liftCodeNotType UType impossible
-validJudgment (LiftCode _ _) (JudgmentValue (Axiom _)) = No liftCodeNotAxiom where
-  liftCodeNotAxiom AxiomAny impossible
 validJudgment (LiftCode _ _) (JudgmentValue (UCode _)) = No liftCodeNotUniverseCode where
   liftCodeNotUniverseCode UCodeU impossible
 validJudgment (LiftCode _ _) (JudgmentValue (LiftCode _ _)) = No liftCodeNotLiftCode where

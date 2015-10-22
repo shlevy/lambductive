@@ -19,9 +19,6 @@ data Term : Type where
   ||| @ lift The number of universes to lift the code minus 1
   ||| @ code The code to lift
   LiftCode : (lift : Nat) -> (code : Term) -> Term
-  ||| An asserted axiom
-  ||| @ name The name of the axiom
-  Axiom : (name : String) -> Term
 
 ||| Judgments about terms
 public
@@ -44,7 +41,3 @@ data ValidJudgment : (term : Term) -> (judgment : Judgment) -> Type where
   ||| Lifted codes are elements of the universe they're lifted to
   ||| @ codeU A valid judgment that `code` is an element of some universe
   LiftCodeU : (codeU : ValidJudgment code (JudgmentValue (U level))) -> ValidJudgment (LiftCode lift code) (JudgmentValue (U (S (lift + level))))
-  ||| Axioms are what you say they are
-  ||| @ name The name of the axiom
-  ||| @ judgment The judgment you're asserting about the axiom
-  AxiomAny : ValidJudgment (Axiom name) judgment
