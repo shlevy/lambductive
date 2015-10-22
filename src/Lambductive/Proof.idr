@@ -22,7 +22,7 @@ containsAxiom (U level) = No universeNotContainsAxiom where
 ||| @ term The term we're deciding about
 ||| @ judgment The judgment we're deciding about
 validJudgment : (term : Term) -> (judgment : Judgment) -> Dec (ValidJudgment term judgment)
-validJudgment (Axiom name) judgment = Yes (AxiomAny name judgment)
+validJudgment (Axiom name) judgment = Yes AxiomAny
 validJudgment (U _) JudgmentType = Yes UType
 validJudgment (U _) (JudgmentValue _) = No universeNotValue where
    universeNotValue UType impossible

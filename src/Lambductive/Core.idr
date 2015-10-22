@@ -32,4 +32,4 @@ data ValidJudgment : (term : Term) -> (judgment : Judgment) -> Type where
   ||| Axioms are what you say they are
   ||| @ name The name of the axiom
   ||| @ judgment The judgment you're asserting about the axiom
-  AxiomAny : (name : String) -> (judgment : Judgment) -> ValidJudgment (Axiom name) judgment
+  AxiomAny : ValidJudgment (Axiom name) judgment

@@ -81,8 +81,14 @@ public
 universeTest : IO ()
 universeTest = run (printCollection universeCollection)
 
+fooAxiomType : ValidJudgment (Axiom "Foo") JudgmentType
+fooAxiomType = AxiomAny
+
+fooAxiomValue : ValidJudgment (Axiom "foo") (JudgmentValue (Axiom "Foo"))
+fooAxiomValue = AxiomAny
+
 axiomCollection : Collection
-axiomCollection = [(MkValid (AxiomAny "Foo" JudgmentType), Nothing), (MkValid (AxiomAny "foo" (JudgmentValue (Axiom "Foo"))), Nothing)]
+axiomCollection = [(MkValid fooAxiomType, Nothing), (MkValid fooAxiomValue, Nothing)]
 
 public
 axiomTest : IO ()
