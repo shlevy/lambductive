@@ -2,7 +2,7 @@ package lambductive
 
 sourcedir = src
 modules = Lambductive.Core, Lambductive.Test, Lambductive.Proof
-tests = Test.universeTest, Test.axiomTest, Test.uCodeTest
+tests = Test.universeTest, Test.axiomTest, Test.uCodeTest, Test.liftCodeTest
 main = Lambductive.Core
 
 opts = "--warnreach"
