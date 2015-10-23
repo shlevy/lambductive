@@ -16,6 +16,10 @@ data Term : Type where
   ||| @ level The level from which to lift a code
   ||| @ code The code to lift
   LiftCode : (level : Nat) -> (code : Term) -> Term
+  ||| Interpretation operator for type codes
+  ||| @ level The level whose codes we're interpreting
+  ||| @ code The code to interpret
+  InterpretCode : (level : Nat) -> (code : Term) -> Term
 
 ||| Judgments about terms
 public
@@ -38,3 +42,6 @@ data ValidJudgment : (term : Term) -> (judgment : Judgment) -> Type where
   ||| Lifted codes are elements of the universe they're lifted to
   ||| @ codeU A valid judgment that `code` is an element of some universe
   LiftCodeU : (codeU : ValidJudgment code (JudgmentValue (U level))) -> ValidJudgment (LiftCode level code) (JudgmentValue (U (S level)))
+  ||| Interpreted codes are types
+  ||| @ codeU A valid judgment that `code` is an element of some universe
+  InterpretCodeType : (codeU : ValidJudgment code (JudgmentValue (U level))) -> ValidJudgment (InterpretCode level code) JudgmentType

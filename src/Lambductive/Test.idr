@@ -15,20 +15,30 @@ instance Eq Term where
   (U n) == (U m) = n == m
   (UCode n) == (UCode m) = n == m
   (LiftCode n t1) == (LiftCode m t2) = n == m && t1 == t2
+  (InterpretCode n t1) == (InterpretCode m t2) = n == m && t1 == t2
   _ == _ = False
 
 instance Ord Term where
   compare (U n) (U m) = compare n m
+  compare (U _) (UCode _) = LT
+  compare (U _) (LiftCode _ _) = LT
+  compare (U _) (InterpretCode _ _) = LT
+  compare (UCode _) (U _) = GT
   compare (UCode n) (UCode m) = compare n m
+  compare (UCode _) (LiftCode _ _) = LT
+  compare (UCode _) (InterpretCode _ _) = LT
+  compare (LiftCode _ _) (U _) = GT
+  compare (LiftCode _ _) (UCode _) = GT
   compare (LiftCode n t1) (LiftCode m t2) = case (compare n m) of
     EQ => compare t1 t2
     x  => x
-  compare (U _) (UCode _) = LT
-  compare (U _) (LiftCode _ _) = LT
-  compare (UCode _) (LiftCode _ _) = LT
-  compare (UCode _) (U _) = GT
-  compare (LiftCode _ _) (UCode _) = GT
-  compare (LiftCode _ _) (U _) = GT
+  compare (LiftCode _ _) (InterpretCode _ _) = LT
+  compare (InterpretCode _ _) (U _) = GT
+  compare (InterpretCode _ _) (UCode _) = GT
+  compare (InterpretCode _ _) (LiftCode _ _) = GT
+  compare (InterpretCode n t1) (InterpretCode m t2) = case (compare n m) of
+    EQ => compare t1 t2
+    x  => x
 
 printTermLookup : Term -> Eff () [STATE (SortedMap Term String), STDIO]
 
@@ -43,6 +53,12 @@ printTerm (UCode n) = do
   putStr "}"
 printTerm (LiftCode n code) = do
   putStr "\\mathsf{Lift}_{"
+  putStr (show n)
+  putStr "} ("
+  printTermLookup code
+  putStr ")"
+printTerm (InterpretCode n code) = do
+  putStr "\\mathsf{Interpret}_{"
   putStr (show n)
   putStr "} ("
   printTermLookup code
