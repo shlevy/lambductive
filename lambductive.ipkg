@@ -1,7 +1,7 @@
 package lambductive
 
 sourcedir = src
-modules = Lambductive.Core.Term, Lambductive.Core.Judgment, Lambductive.Proof
+modules = Lambductive.Core.Term, Lambductive.Core.Judgment, Lambductive.Core.Equivalence, Lambductive.Proof
 main = Lambductive.Proof
 
 opts = "--warnreach"

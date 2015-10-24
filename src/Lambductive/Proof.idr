@@ -2,6 +2,7 @@
 module Lambductive.Proof
 
 import Lambductive.Core.Term
+import Lambductive.Core.Equivalence
 import Lambductive.Core.Judgment
 
 %default total
@@ -18,6 +19,13 @@ instance Uninhabited (Judgment (UCode _) SortType) where
 
 instance Uninhabited (Judgment (LiftCode _ _) SortType) where
   uninhabited (LiftCodeU _) impossible
+
+||| Transport a judgment along an equivalence
+||| @ equivalence The equivalence we're transporting along
+||| @ judgment The judgment we're transporting
+public
+transportJudgment : (equivalence : Equivalence term1 term2) -> (judgment : Judgment term1 sort) -> Judgment term2 sort
+transportJudgment InterpretUCodeIsU (InterpretCodeType _) = UType
 
 ||| A decision procedure for sort judgment
 ||| @ term The term we're deciding about
