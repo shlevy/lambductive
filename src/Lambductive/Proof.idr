@@ -26,6 +26,8 @@ instance Uninhabited (Judgment (LiftCode _ _) SortType) where
 public
 transportJudgment : (equivalence : Equivalence term1 term2) -> (judgment : Judgment term1 sort) -> Judgment term2 sort
 transportJudgment InterpretUCodeIsU (InterpretCodeType _) = UType
+transportJudgment (LiftCodeCongruence equivalence) (LiftCodeU judgment) with (transportJudgment equivalence judgment)
+  | judgment2 = LiftCodeU judgment2
 
 ||| A decision procedure for sort judgment
 ||| @ term The term we're deciding about
