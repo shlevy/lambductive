@@ -10,8 +10,3 @@ import Lambductive.Core.Term
 ||| @ rhs The right hand side of the equivalence
 public
 data Equivalence : (lhs : Term) -> (rhs : Term) -> Type where
-  ||| The interpretation of the universe code is the universe
-  InterpretUCodeIsU : Equivalence (InterpretCode (S level) (UCode level)) (U level)
-  ||| Equivalence is a congruence over LiftCode
-  ||| @ equivalence : The equivalence we're lifting into LiftCode
-  LiftCodeCongruence : (equivalence : Equivalence lhs rhs) -> Equivalence (LiftCode level lhs) (LiftCode level rhs)

@@ -4,19 +4,21 @@ module Lambductive.Core.Term
 %default total
 
 ||| Terms of the language
+|||
+||| For types that have type codes, the same term is used for both and context is used to disambiguate.
+|||
+||| The type code interpretation operator and lift operators are inferred from context.
+|||
+||| There is no term for any kind of "base" level. Instead, all terms referencing universes must be made level polymorphic by taking the level as a function argument.
 public
 data Term : Type where
-  ||| Tarski-style universe
+  ||| The type of universe levels
+  Level : Term
+  ||| The successor of a level
+  |||
+  ||| The successor of a level is the level of the universe which contains this level's universe's type code.
+  ||| @ level The level whose successor we're constructing
+  SuccLevel : (level : Term) -> Term
+  ||| Tarski-style universe type and type code
   ||| @ level The universe's level
-  U : (level : Nat) -> Term
-  ||| Type code for universe
-  ||| @ level The universe's level
-  UCode : (level : Nat) -> Term
-  ||| Lifting operator for type codes
-  ||| @ level The level from which to lift a code
-  ||| @ code The code to lift
-  LiftCode : (level : Nat) -> (code : Term) -> Term
-  ||| Interpretation operator for type codes
-  ||| @ level The level whose codes we're interpreting
-  ||| @ code The code to interpret
-  InterpretCode : (level : Nat) -> (code : Term) -> Term
+  U : (level : Term) -> Term
