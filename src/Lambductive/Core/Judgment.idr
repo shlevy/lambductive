@@ -23,7 +23,7 @@ data Judgment : (term : Term) -> (sort : Sort) -> Type where
   LevelType : Judgment Level SortType
   ||| The successor of a level is a level
   ||| @ levelLevel A judgment that `level` is a level
-  SuccLevel : (levelLevel : Judgment level (SortValue Level)) -> Judgment (SuccLevel level) (SortValue Level)
+  SuccLevelLevel : (levelLevel : Judgment level (SortValue Level)) -> Judgment (SuccLevel level) (SortValue Level)
   ||| Universes are types
   ||| @ levelLevel A judgment that `level` is a level
   UType : (levelLevel : Judgment level (SortValue Level)) -> Judgment (U level) SortType
