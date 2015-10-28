@@ -69,10 +69,10 @@ data JudgmentDecision : (term : Term) -> (sort : Sort) -> Type where
 ||| @ term The term we're deciding about
 ||| @ sort The sort we're deciding applies to `term` or not
 public
-judgmentDecidable : (term : Term) -> (sort : Sort) -> JudgmentDecision term sort
-judgmentDecidable _ (SortValue _) = Bad NoValues
-judgmentDecidable Level SortType = Good LevelType
-judgmentDecidable (U level) SortType with (judgmentDecidable level (SortValue Level))
+decideJudgment : (term : Term) -> (sort : Sort) -> JudgmentDecision term sort
+decideJudgment _ (SortValue _) = Bad NoValues
+decideJudgment Level SortType = Good LevelType
+decideJudgment (U level) SortType with (decideJudgment level (SortValue Level))
   | Good judgment = Good (UType judgment)
   | Bad notLevel = Bad (UArgumentNotLevel notLevel)
-judgmentDecidable (SuccLevel level) SortType = Bad SuccLevelNotType
+decideJudgment (SuccLevel level) SortType = Bad SuccLevelNotType
