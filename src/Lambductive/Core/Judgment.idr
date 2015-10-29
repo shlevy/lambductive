@@ -29,12 +29,10 @@ data Judgment : (term : Term) -> (sort : Sort) -> Type where
   UType : (levelLevel : Judgment level (SortValue Level)) -> Judgment (U level) SortType
   ||| Universe codes are elements of the next universe
   ||| @ levelLevel A judgment that `level` is a level
-  UCodeU : (levelLevel : Judgment level (SortValue Level)) -> Judgment (U level) (SortValue (U (SuccLevel level)))
+  UCodeU : (levelLevel : Judgment level (SortValue Level)) -> Judgment (UCode level) (SortValue (U (SuccLevel level)))
+  ||| Interpreted codes are types
+  ||| @ codeU A judgment that `code` is an element of some universe
+  InterpretCodeType : (codeU : Judgment code (SortValue (U level))) -> Judgment (InterpretCode level code) SortType
   ||| Lifted codes are elements of the universe they're lifted to
   ||| @ codeU A judgment that `code` is an element of some universe
-  LiftCodeU : (codeU : Judgment code (SortValue (U level))) -> Judgment code (SortValue (U (SuccLevel level)))
-  ||| Interpreted codes are types
-  |||
-  ||| For equivalences to stay simple, this requires the term for a type's code, if any, to be the same as the term for the type it represents.
-  ||| @ codeU A judgment that `code` is an element of some universe
-  InterpretCodeType : (codeU : Judgment code (SortValue (U level))) -> Judgment code SortType
+  LiftCodeU : (codeU : Judgment code (SortValue (U level))) -> Judgment (LiftCode level code) (SortValue (U (SuccLevel level)))
