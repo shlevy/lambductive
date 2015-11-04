@@ -2,17 +2,9 @@
 module Lambductive.Proof
 
 import Lambductive.Core.Term
-import Lambductive.Core.Equivalence
 import Lambductive.Core.Judgment
 
 %default total
-
-||| Transport a judgment along an equivalence
-||| @ equivalence The equivalence we're transporting along
-||| @ judgment The judgment we're transporting
-public
-transportJudgment : (equivalence : Equivalence term1 term2) -> (judgment : Judgment term1 sort) -> Judgment term2 sort
-%runElab (defineFunction $ DefineFun `{transportJudgment} [])
 
 ||| A structured proof that a given term cannot be judged to have a given sort
 ||| @ term The term we're judging
