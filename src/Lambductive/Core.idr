@@ -22,8 +22,10 @@ mutual
     ||| Dependent function type
     ||| @domain The domain of the function
     ||| @domainType Proof that the domain is a type
+    ||| @domainContext Proof that the domain is in a context
     ||| @range The range of the function
     ||| @rangeType Proof that the range is a type
+    ||| @rangeContext Proof that the range is in the context obtained by adding a variable of the domain type to the context of the domain
     Pi : (domain : Term) ->
          .{auto domainType : IsType domain} ->
          .{auto domainContext : InContext domain context} ->
@@ -41,6 +43,12 @@ mutual
     PiIsType : IsType (Pi domain {domainType} {domainContext} range {rangeType} {rangeContext})
 
   ||| Proof that a term is in a context
+  ||| @term The term in question
+  ||| @context The context in question
   data InContext : (term : Term) -> (context : Context) -> Type where
+    ||| The type universe is in any context
+    ||| @context The context the universe is in
     UInAnyContext : InContext U context
-    PiInDomainContext : InContext domain context -> InContext (Pi domain {domainType} range {rangeType} {rangeContext}) context
+    ||| Dependent function types are in the context of their domain
+    ||| @domainInContext Proof that the domain is in a context
+    PiInDomainContext : (domainInContext : InContext domain context) -> InContext (Pi domain {domainType} range {rangeType} {rangeContext}) context
