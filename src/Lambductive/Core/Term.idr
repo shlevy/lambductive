@@ -20,6 +20,10 @@ data Term : Type where
   ||| A universe of types
   ||| @ level The universe's level
   U : (level : Term) -> Term
+  ||| A dependent function type
+  ||| @ domain The domain of the function
+  ||| @ range The (possibly dependent) range of the function
+  Pi : (domain : Term) -> (range : Term) -> Term
 
 decTermEq : (term1, term2 : Term) -> Dec (term1 = term2)
 %runElab (deriveDecEq `{decTermEq})

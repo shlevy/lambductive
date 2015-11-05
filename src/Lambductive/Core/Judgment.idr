@@ -19,3 +19,7 @@ data Judgment : (term : Term) -> (type : Term) -> Type where
   ||| Members of one universe are members of the next universe
   ||| @ typeIsU A judgment that `type` is a member of some universe
   IsUIsSuccU : (typeIsU : Judgment type (U level)) -> Judgment type (U (SuccLevel level))
+  ||| Dependent function types are in the same universe as their domain and range
+  ||| @ domainIsU A judgment that `domain` is a member of some universe
+  ||| @ rangeIsU A judgment that `range` is a member of the same universe
+  PiIsU : (domainIsU : Judgment domain (U level)) -> (rangeIsU : Judgment range (U level)) -> Judgment (Pi domain range) (U level)
