@@ -6,163 +6,117 @@ import Lambductive.Core.Judgment
 
 %default total
 
-||| A structured proof that a given term cannot be judged to have a given sort
-||| @ term The term we're judging
-||| @ sort The sort that cannot be assigned
+data LTE : Term -> Term -> Type where
+  LTERefl : Judgment term Level -> LTE term term
+  LTESuccRight : LTE level1 level2 -> LTE level1 (SuccLevel level2)
+  
+LTELeftLevel : LTE term _ -> Judgment term Level
+LTELeftLevel (LTERefl judgment) = judgment
+LTELeftLevel (LTESuccRight prf) = LTELeftLevel prf
+
+LTERightLevel : LTE _ term -> Judgment term Level
+LTERightLevel (LTERefl judgment) = judgment
+LTERightLevel (LTESuccRight prf) = SuccLevelIsLevel (LTERightLevel prf)
+
+lteSucc : LTE term1 term2 -> LTE (SuccLevel term1) (SuccLevel term2)
+lteSucc (LTERefl judgment) = LTERefl (SuccLevelIsLevel judgment)
+lteSucc (LTESuccRight prf) = LTESuccRight (lteSucc prf)
+
+ltePred : LTE (SuccLevel term1) (SuccLevel term2) -> LTE term1 term2
+ltePred (LTERefl (SuccLevelIsLevel judgment)) = LTERefl judgment
+ltePred (LTESuccRight (LTERefl (SuccLevelIsLevel judgment))) = LTESuccRight (LTERefl judgment)
+ltePred (LTESuccRight (LTESuccRight prf)) = LTESuccRight (ltePred (LTESuccRight prf))
+
+instance Uninhabited (Judgment (U _) Level) where
+  uninhabited (UIsSuccU _) impossible
+
+instance Uninhabited (Judgment Level _) where
+  uninhabited (IsUIsSuccU judgment) = uninhabited judgment
+
+isLTE : (term1 : Term) -> (term2 : Term) -> Dec (LTE term1 term2)
+isLTE (U _) _ = No (absurd . LTELeftLevel)
+isLTE _ (U _) = No (absurd . LTERightLevel)
+isLTE Level _ = No (absurd . LTELeftLevel)
+isLTE _ Level = No (absurd . LTERightLevel)
+isLTE (SuccLevel level1) (SuccLevel level2) with (isLTE level1 level2)
+  | Yes prf = Yes (lteSucc prf)
+  | No contra = No (contra . ltePred)
+
+||| A structured proof that a given term cannot be assigned a given type
+||| @ term The term that is ill-typed
+||| @ type The type that does not apply to the terms
 public
-data BadJudgment : (term : Term) -> (sort : Sort) -> Type where
-  ||| The Level type is not a value
-  LevelNotValue : BadJudgment Level (SortValue type)
+data IllTyped : (term : Term) -> (type : Term) -> Type where
+  ||| `Level` has no type
+  LevelNotAnything : IllTyped Level type
+  ||| `SuccLevel term` has no type if `term` is not a level
+  ||| @ termIsNotLevel Proof that `term` is not a level
+  SuccLevelNotLevelNotAnything : (termIsNotLevel : IllTyped term Level) -> IllTyped (SuccLevel term) type
+  ||| `SuccLevel term` is not a member of any universe
+  SuccLevelNotU : IllTyped (SuccLevel level1) (U level2)
+  ||| `SuccLevel term` is not a type
+  SuccLevelNotType : IllTyped term (SuccLevel level)
+  ||| A universe is not a level
+  UNotLevel : IllTyped (U level) Level
+  ||| A universe is not the type of another universe whose level is not strictly less than the first universe's
+  ||| @ succLevelLevel1NotLTELevel2 A proof that the universe's level is not strictly less than its containing universe's level
+  NotLTUNotU : .(succLevelLevel1NotLTELevel2 : Not (LTE (SuccLevel level1) level2)) -> IllTyped (U level1) (U level2)
 
-  ||| The successor of a level is not a type
-  SuccLevelNotType : BadJudgment (SuccLevel level) SortType
-  ||| The successor level of a term that is not a level is not a level
-  ||| @ levelNotLevel Proof that `level` is not a level
-  SuccLevelArgumentNotLevel : (levelNotLevel : BadJudgment level (SortValue Level)) -> BadJudgment (SuccLevel level) (SortValue Level)
-  ||| The successor of a level is not a type code
-  SuccLevelNotU : BadJudgment (SuccLevel level1) (SortValue (U level2))
-  ||| The successor of a level is not a member of any interpreted code
-  SuccLevelNotInterpretCode : BadJudgment (SuccLevel level1) (SortValue (InterpretCode level2 code))
+instance Uninhabited (Judgment (SuccLevel _) (U _)) where
+  uninhabited (IsUIsSuccU judgment) = uninhabited judgment
 
-  ||| The universe of a term that is not a level is not a universe
-  ||| @ levelNotLevel Proof that `level` is not a level
-  UArgumentNotLevel : (levelNotLevel : BadJudgment level (SortValue Level)) -> BadJudgment (U level) SortType
-  ||| The universe is not a value
-  UNotValue : BadJudgment (U level) (SortValue type)
+uIsBiggerU : Judgment (U level1) (U level2) -> LTE (SuccLevel level1) level2
+uIsBiggerU (UIsSuccU judgment) = lteSucc (LTERefl judgment)
+uIsBiggerU (IsUIsSuccU prf) = LTESuccRight (uIsBiggerU prf)
 
-  ||| The universe code is not a type
-  UCodeNotType : BadJudgment (UCode level) SortType
-  ||| The universe code is not a level
-  UCodeNotLevel : BadJudgment (UCode level) (SortValue Level)
-  ||| The code of a universe of a term that is not a level is not a universe code
-  ||| @ levelNotLevel Proof that `level` is not a level
-  UCodeArgumentNotLevel : (levelNotLevel : BadJudgment level (SortValue Level)) -> BadJudgment (UCode level) (SortValue (U (SuccLevel level)))
-  ||| If a universe's level is not the successor of the universe code's, the code does not belong to that universe
-  ||| @ succLevel1NotLevel2 Proof that the successor of `level1` is not `level2`
-  UCodeNotNotSuccU : (succLevel1NotLevel2 : Not (SuccLevel level1 = level2)) -> BadJudgment (UCode level1) (SortValue (U level2))
-  ||| A universe code is not a member of any interpreted code (for now)
-  UCodeNotInterpretCode : BadJudgment (UCode level1) (SortValue (InterpretCode level2 code))
+||| If a term cannot be assigned a given type, there is no judgment assigning that term that type
+||| @termNotType Proof that `term` is not in `type`
+abstract
+illTypedCorrect : (termNotType : IllTyped term type) -> Not (Judgment term type)
+illTypedCorrect LevelNotAnything judgment = absurd judgment
+illTypedCorrect (SuccLevelNotLevelNotAnything prf) (SuccLevelIsLevel levelIsLevel) = illTypedCorrect prf levelIsLevel
+illTypedCorrect (SuccLevelNotLevelNotAnything _) (IsUIsSuccU judgment) = absurd judgment
+illTypedCorrect SuccLevelNotU judgment = absurd judgment
+illTypedCorrect (NotLTUNotU contra) judgment = contra (uIsBiggerU judgment)
 
-  ||| If a code is not a member of a given universe, the interpretation of that code from that universe is not a type
-  ||| @ codeNotU Proof that `code` is not a code of the universe
-  InterpretCodeArgumentNotU : (codeNotU : BadJudgment code (SortValue (U level))) -> BadJudgment (InterpretCode level code) SortType
-  ||| The interpretation of a universe code is not a value
-  InterpretCodeNotValue : BadJudgment (InterpretCode level code) (SortValue type)
-
-  ||| A lifted code is not a type
-  LiftCodeNotType : BadJudgment (LiftCode level code) SortType
-  ||| A lifted code is not a level
-  LiftCodeNotLevel : BadJudgment (LiftCode level code) (SortValue Level)
-  ||| If a code is not a member of a given universe, the lift of that code from that universe is not a member of the next universe
-  ||| @ codeNotU Proof that `code` is not a code of the universe
-  LiftCodeArgumentNotU : (codeNotU : BadJudgment code (SortValue (U level))) -> BadJudgment (LiftCode level code) (SortValue (U (SuccLevel level)))
-  ||| If a universe's level is not the successor of the lift operator's, the lifted code does not belong to that universe
-  ||| @ succLevel1NotLevel2 Proof that the successor of `level1` is not `level2`
-  LiftCodeNotNotSuccU : (succLevel1NotLevel2 : Not (SuccLevel level1 = level2)) -> BadJudgment (LiftCode level1 code) (SortValue (U level2))
-  ||| A lifted code is not a member of any interpreted code (for now)
-  LiftCodeNotInterpretCode : BadJudgment (LiftCode level1 code1) (SortValue (InterpretCode level2 code2))
-
-  ||| If a value's proposed type is not a type, the value does not have that type
-  TypeNotType : (typeNotType : BadJudgment type SortType) -> BadJudgment value (SortValue type)
-
-||| If we have a bad judgment of a given term and sort pair, there is no valid judgment of that term having that sort
-||| @ badJudgment The proof that `term` cannot be assigned `sort`
-public
-badJudgmentNotJudgment : (badJudgment : BadJudgment term sort) -> Not (Judgment term sort)
-
-badJudgmentNotJudgment LevelNotValue LevelType impossible
-
-badJudgmentNotJudgment SuccLevelNotType (SuccLevelLevel _) impossible
-badJudgmentNotJudgment (SuccLevelArgumentNotLevel levelNotLevel) (SuccLevelLevel levelLevel) = badJudgmentNotJudgment levelNotLevel levelLevel
-badJudgmentNotJudgment SuccLevelNotU (SuccLevelLevel _) impossible
-badJudgmentNotJudgment SuccLevelNotInterpretCode (SuccLevelLevel _) impossible
-
-badJudgmentNotJudgment (UArgumentNotLevel levelNotLevel) (UType levelLevel) = badJudgmentNotJudgment levelNotLevel levelLevel
-badJudgmentNotJudgment UNotValue (UType _) impossible
-
-badJudgmentNotJudgment UCodeNotType (UCodeU _) impossible
-badJudgmentNotJudgment UCodeNotLevel (UCodeU _) impossible
-badJudgmentNotJudgment (UCodeArgumentNotLevel levelNotLevel) (UCodeU levelLevel) = badJudgmentNotJudgment levelNotLevel levelLevel
-badJudgmentNotJudgment (UCodeNotNotSuccU succLevel1NotLevel2) (UCodeU _) = succLevel1NotLevel2 Refl
-badJudgmentNotJudgment UCodeNotInterpretCode (UCodeU _) impossible
-
-badJudgmentNotJudgment (InterpretCodeArgumentNotU codeNotU) (InterpretCodeType codeU) = badJudgmentNotJudgment codeNotU codeU
-badJudgmentNotJudgment InterpretCodeNotValue (InterpretCodeType _) impossible
-
-badJudgmentNotJudgment LiftCodeNotType (LiftCodeU _) impossible
-badJudgmentNotJudgment LiftCodeNotLevel (LiftCodeU _) impossible
-badJudgmentNotJudgment (LiftCodeArgumentNotU codeNotU) (LiftCodeU codeU) = badJudgmentNotJudgment codeNotU codeU
-badJudgmentNotJudgment (LiftCodeNotNotSuccU succLevel1NotLevel2) (LiftCodeU _) = succLevel1NotLevel2 Refl
-badJudgmentNotJudgment LiftCodeNotInterpretCode (LiftCodeU _) impossible
-
-badJudgmentNotJudgment (TypeNotType typeNotType) (SuccLevelLevel levelLevel) = badJudgmentNotJudgment typeNotType LevelType
-badJudgmentNotJudgment (TypeNotType typeNotType) (UCodeU levelLevel) = badJudgmentNotJudgment typeNotType (UType (SuccLevelLevel levelLevel))
-badJudgmentNotJudgment (TypeNotType typeNotType) (LiftCodeU codeU) = badJudgmentNotJudgment typeNotType (UType (SuccLevelLevel (getLevel codeU))) where
-  getLevel : Judgment code (SortValue (U level)) -> Judgment level (SortValue Level)
-  getLevel (UCodeU levelLevel) = SuccLevelLevel levelLevel
-  getLevel (LiftCodeU codeU) = SuccLevelLevel (getLevel codeU)
-
-||| A decision about whether a term can be assigned a sort
+||| A decision about whether a term can be assigned a type
 ||| @ term The term we're deciding about
-||| @ sort The sort we're deciding applies to `term` or not
+||| @ type The type we're deciding applies to `term` or not
 public
-data JudgmentDecision : (term : Term) -> (sort : Sort) -> Type where
-  ||| The term can be assigned the sort
-  ||| @ judgment The judgment assigning `term` the sort `sort`
-  Good : (judgment : Judgment term sort) -> JudgmentDecision term sort
-  ||| The term cannot be assigned the sort
-  ||| @ badJudgment The proof that `term` cannot be assigned the sort `sort`
-  Bad : (badJudgment : BadJudgment term sort) -> JudgmentDecision term sort
+data JudgmentDecision : (term : Term) -> (type : Term) -> Type where
+  ||| The term can be assigned the type
+  ||| @ judgment The judgment assigning `term` the type `type`
+  Good : .(judgment : Judgment term type) -> JudgmentDecision term type
+  ||| The term cannot be assigned the type
+  ||| @ illTyped The proof that `term` cannot be assigned the type `type`
+  Bad : (illTyped : IllTyped term type) -> JudgmentDecision term type
 
-||| A decision procedure for sort judgment
+succLevelLevel : Judgment (SuccLevel level) Level -> Judgment level Level
+succLevelLevel (SuccLevelIsLevel levelIsLevel) = levelIsLevel
+
+uIsBiggerU' : LTE (SuccLevel level1) level2 -> Judgment (U level1) (U level2)
+uIsBiggerU' (LTERefl (SuccLevelIsLevel prf)) = UIsSuccU prf
+uIsBiggerU' (LTESuccRight (LTERefl prf)) = IsUIsSuccU (UIsSuccU (succLevelLevel prf))
+uIsBiggerU' (LTESuccRight (LTESuccRight prf)) = IsUIsSuccU (IsUIsSuccU (uIsBiggerU' prf))
+
+||| A decision procedure for type judgment
 ||| @ term The term we're deciding about
-||| @ sort The sort we're deciding applies to `term` or not
-public
-decideJudgment : (term : Term) -> (sort : Sort) -> JudgmentDecision term sort
+||| @ type The type we're deciding applies to `term` or not
+abstract
+decideJudgment : (term : Term) -> (type : Term) -> JudgmentDecision term type
 
--- Level type
-decideJudgment Level SortType = Good LevelType
-decideJudgment Level (SortValue _) = Bad LevelNotValue
+-- Level Type
+decideJudgment Level _ = Bad LevelNotAnything
 
 -- Level successor
-decideJudgment (SuccLevel _) SortType = Bad SuccLevelNotType
-decideJudgment _ (SortValue (SuccLevel _)) = Bad (TypeNotType SuccLevelNotType)
-decideJudgment (SuccLevel level) (SortValue Level) with (decideJudgment level (SortValue Level))
-  | Good levelLevel = Good (SuccLevelLevel levelLevel)
-  | Bad levelNotLevel = Bad (SuccLevelArgumentNotLevel levelNotLevel)
-decideJudgment (SuccLevel _) (SortValue (U _)) = Bad SuccLevelNotU
-decideJudgment (SuccLevel _) (SortValue (InterpretCode _ _)) = Bad SuccLevelNotInterpretCode
+decideJudgment (SuccLevel level) Level with (decideJudgment level Level)
+  | Good levelIsLevel = Good (SuccLevelIsLevel levelIsLevel)
+  | Bad levelNotLevel = Bad (SuccLevelNotLevelNotAnything levelNotLevel)
+decideJudgment (SuccLevel _) (U _) = Bad SuccLevelNotU
+decideJudgment _ (SuccLevel _) = Bad SuccLevelNotType
 
--- Universe type
-decideJudgment (U level) SortType with (decideJudgment level (SortValue Level))
-  | Good levelLevel = Good (UType levelLevel)
-  | Bad levelNotLevel = Bad (UArgumentNotLevel levelNotLevel)
-decideJudgment (U level) (SortValue _) = Bad UNotValue
-
--- Universe code
-decideJudgment (UCode _) SortType = Bad UCodeNotType
-decideJudgment _ (SortValue (UCode _)) = Bad (TypeNotType UCodeNotType)
-decideJudgment (UCode _) (SortValue Level) = Bad UCodeNotLevel
-decideJudgment (UCode level1) (SortValue (U level2)) with (decEq (SuccLevel level1) level2)
-  decideJudgment (UCode level1) (SortValue (U _)) | Yes Refl with (decideJudgment level1 (SortValue Level))
-    | Good level1Level = Good (UCodeU level1Level)
-    | Bad levelNotLevel = Bad (UCodeArgumentNotLevel levelNotLevel)
-  | No contra = Bad (UCodeNotNotSuccU contra)
-decideJudgment (UCode _) (SortValue (InterpretCode _ _)) = Bad UCodeNotInterpretCode
-
--- Code interpretation operator
-decideJudgment (InterpretCode level code) SortType with (decideJudgment code (SortValue (U level)))
-  | Good codeU = Good (InterpretCodeType codeU)
-  | Bad codeNotU = Bad (InterpretCodeArgumentNotU codeNotU)
-decideJudgment (InterpretCode _ _) (SortValue _) = Bad InterpretCodeNotValue
-
--- Code lifting operator
-decideJudgment (LiftCode _ _) SortType = Bad LiftCodeNotType
-decideJudgment _ (SortValue (LiftCode _ _)) = Bad (TypeNotType LiftCodeNotType)
-decideJudgment (LiftCode _ _) (SortValue Level) = Bad LiftCodeNotLevel
-decideJudgment (LiftCode level1 code) (SortValue (U level2)) with (decEq (SuccLevel level1) level2)
-  decideJudgment (LiftCode level1 code) (SortValue (U _)) | Yes Refl with (decideJudgment code (SortValue (U level1)))
-    | Good codeU = Good (LiftCodeU codeU)
-    | Bad codeNotU = Bad (LiftCodeArgumentNotU codeNotU)
-  | No contra = Bad (LiftCodeNotNotSuccU contra)
-decideJudgment (LiftCode _ _) (SortValue (InterpretCode _ _)) = Bad LiftCodeNotInterpretCode
+-- Universe
+decideJudgment (U level1) (U level2) with (isLTE (SuccLevel level1) level2)
+  | No contra = Bad (NotLTUNotU contra)
+  | Yes prf = Good (uIsBiggerU' prf)
+decideJudgment (U _) Level = Bad UNotLevel

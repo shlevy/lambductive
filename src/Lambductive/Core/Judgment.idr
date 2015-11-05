@@ -5,34 +5,17 @@ import Lambductive.Core.Term
 
 %default total
 
-||| Sorts of terms
-public
-data Sort : Type where
-  ||| The term is a type
-  SortType : Sort
-  ||| The term is a value
-  ||| @ type The type of the value
-  SortValue : (type : Term) -> Sort
-
-||| A judgment of the sort of the term
+||| A judgment of the type of the term
 ||| @ term The term we're judging
-||| @ sort The sort we're assigning to the term
+||| @ type The type we're assigning to the term
 public
-data Judgment : (term : Term) -> (sort : Sort) -> Type where
-  ||| Level is a type
-  LevelType : Judgment Level SortType
+data Judgment : (term : Term) -> (type : Term) -> Type where
   ||| The successor of a level is a level
-  ||| @ levelLevel A judgment that `level` is a level
-  SuccLevelLevel : (levelLevel : Judgment level (SortValue Level)) -> Judgment (SuccLevel level) (SortValue Level)
-  ||| Universes are types
-  ||| @ levelLevel A judgment that `level` is a level
-  UType : (levelLevel : Judgment level (SortValue Level)) -> Judgment (U level) SortType
-  ||| Universe codes are elements of the next universe
-  ||| @ levelLevel A judgment that `level` is a level
-  UCodeU : (levelLevel : Judgment level (SortValue Level)) -> Judgment (UCode level) (SortValue (U (SuccLevel level)))
-  ||| Interpreted codes are types
-  ||| @ codeU A judgment that `code` is an element of some universe
-  InterpretCodeType : (codeU : Judgment code (SortValue (U level))) -> Judgment (InterpretCode level code) SortType
-  ||| Lifted codes are elements of the universe they're lifted to
-  ||| @ codeU A judgment that `code` is an element of some universe
-  LiftCodeU : (codeU : Judgment code (SortValue (U level))) -> Judgment (LiftCode level code) (SortValue (U (SuccLevel level)))
+  ||| @ levelIsLevel A judgment that `level` is a level
+  SuccLevelIsLevel : (levelIsLevel : Judgment level Level) -> Judgment (SuccLevel level) Level
+  ||| Universes are members of the next universe
+  ||| @ levelIsLevel A judgment that `level` is a level
+  UIsSuccU : (levelIsLevel : Judgment level Level) -> Judgment (U level) (U (SuccLevel level))
+  ||| Members of one universe are members of the next universe
+  ||| @ typeIsU A judgment that `type` is a member of some universe
+  IsUIsSuccU : (typeIsU : Judgment type (U level)) -> Judgment type (U (SuccLevel level))
