@@ -54,30 +54,23 @@ data IsType : (term : Term) -> (context : Context) -> Type where
   ||| Level is a type in any context
   LevelIsType : IsType Level context
   ||| The type universe is a type in any context where its level is a level
-  ||| @levelIsLevel Proof that the level is a level in the context
-  UIsType : (levelIsLevel : HasLevelType level context) -> IsType (U level) context
-  ||| A dependent function type is a type in any context where its domain is a type and its range is a type in the domain type-augmented context
-  ||| @domainIsType Proof that the domain is a type in the context
-  ||| @rangeIsType Proof that the range is a type in the domain type-augmented context
-  PiIsType : (domainIsType : IsType domain context) -> (rangeIsType : IsType range (domain :: context)) -> IsType (Pi domain range) context
+  UIsType : IsType (U {context} level {levelIsLevel}) context
+  ||| A dependent function type is a type in any context where its domain and range are valid
+  PiIsType : IsType (Pi {context} domain {domainIsType} range {rangeIsType}) context
   ||| `Var Z` is a type in any context whose head is a universe
-  ||| @levelIsLevel Proof that the universe's level is a level in the context
-  VarHeadIsType : (levelIsLevel : HasLevelType level context) -> IsType (Var Z) ((::) (U level) context {headIsType=UIsType levelIsLevel})
+  VarHeadIsType : IsType (Var Z) ((::) (U {context} level {levelIsLevel}) context {headIsType})
   ||| If `Var k` is a type in a context, `Var (S k)` is a type in a context with an extra variable
-  ||| @typeIsType Proof that the new type is a type in the old context
   ||| @predIsType Proof that the predecessor var is a type in the old context
-  VarTailIsType : (typeIsType : IsType type context) -> (predIsType : IsType (Var k) context) -> IsType (Var (S k)) (type :: context)
+  VarTailIsType : (predIsType : IsType (Var k) context) -> IsType (Var (S k)) ((::) type context {headIsType})
 
 ||| Proof that a term is a level in a context
 ||| @term The term in question
 ||| @context The context in question
 data HasLevelType : (term : Term) -> (context : Context) -> Type where
   ||| If a level is a level in a context, its successor is a level in that context
-  ||| @levelIsLevel Proof that the level is a level in the context
-  SuccLevelHasLevelType : (levelIsLevel : HasLevelType level context) -> HasLevelType (SuccLevel level) context
+  SuccLevelHasLevelType : HasLevelType (SuccLevel {context} level {levelIsLevel}) context
   ||| `Var Z` is a level in any context whose head is the level type
   VarHeadHasLevelType : HasLevelType (Var Z) (Level :: context)
   ||| If `Var k` is a level in a context, `Var (S k)` is a level in a context with an extra variable
-  ||| @typeIsType Proof that the new variable's type is a type in the old context
   ||| @predIsType Proof that the predecessor variable's type is a type in the old context
-  VarTailHasLevelType : (typeIsType : IsType type context) -> (predIsType : HasLevelType (Var k) context) -> HasLevelType (Var (S k)) (type :: context)
+  VarTailHasLevelType : (predIsType : HasLevelType (Var k) context) -> HasLevelType (Var (S k)) ((::) type context {headIsType})
