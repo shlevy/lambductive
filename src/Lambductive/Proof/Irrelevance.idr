@@ -48,13 +48,18 @@ subContextIrrelevant (SubContextCons p1) (SubContextCons p2) with
 subContextIrrelevant (SubContextCons p) SubContextRefl = absurd p
 subContextIrrelevant SubContextRefl (SubContextCons p) = absurd p
 
+varIdxInBounds : VarSort n c s -> LTE (S n) (length c)
+varIdxInBounds VarSortLastValue = lteRefl
+varIdxInBounds (VarSortLastType _) = lteRefl
+varIdxInBounds (VarSortCons p) = lteSuccRight (varIdxInBounds p)
+
 varSortIrrelevant : (a : VarSort n c s) -> (b : VarSort n c s) -> a = b
 varSortIrrelevant (VarSortLastType l1) (VarSortLastType l2) with (levelLTEIrrelevant l1 l2)
   varSortIrrelevant (VarSortLastType l1) (VarSortLastType l1) | Refl = Refl
 varSortIrrelevant VarSortLastValue VarSortLastValue = Refl
 varSortIrrelevant (VarSortCons a) (VarSortCons b) with (varSortIrrelevant a b)
   varSortIrrelevant (VarSortCons a) (VarSortCons a) | Refl = Refl
-varSortIrrelevant (VarSortCons a) (VarSortLastType l) = ?hole1
-varSortIrrelevant (VarSortLastType l) (VarSortCons b) = ?hole2
-varSortIrrelevant (VarSortCons a) VarSortLastValue = ?hole3
-varSortIrrelevant VarSortLastValue (VarSortCons b) = ?hole4
+varSortIrrelevant (VarSortCons a) (VarSortLastType _) = absurd (varIdxInBounds a)
+varSortIrrelevant (VarSortLastType _) (VarSortCons a) = absurd (varIdxInBounds a)
+varSortIrrelevant (VarSortCons a) VarSortLastValue = absurd (varIdxInBounds a)
+varSortIrrelevant VarSortLastValue (VarSortCons a) = absurd (varIdxInBounds a)
