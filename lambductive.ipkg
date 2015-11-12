@@ -1,8 +1,7 @@
 package lambductive
 
 sourcedir = src
-modules = Lambductive.Core
+modules = Lambductive.Core, Lambductive.Proof.Irrelevance
 main = Lambductive.Core
 
 opts = "--warnreach"
-pkgs = pruviloj
