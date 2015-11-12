@@ -35,19 +35,6 @@ typeNotUIrrelevant : (a : TypeNotU term) -> (b : TypeNotU term) -> a = b
 typeNotUIrrelevant PiType PiType = Refl
 typeNotUIrrelevant VarType VarType = Refl
 
-instance Uninhabited (SubContext ((::) t c {ok}) c) where
-  uninhabited {c=[]} (SubContextCons _) impossible
-
-subContextIrrelevant : (a : SubContext sub super) ->
-                       (b : SubContext sub super) ->
-                       a = b
-subContextIrrelevant SubContextRefl SubContextRefl = Refl
-subContextIrrelevant (SubContextCons p1) (SubContextCons p2) with
-  (subContextIrrelevant p1 p2)
-  subContextIrrelevant (SubContextCons p1) (SubContextCons p1) | Refl = Refl
-subContextIrrelevant (SubContextCons p) SubContextRefl = absurd p
-subContextIrrelevant SubContextRefl (SubContextCons p) = absurd p
-
 varIdxInBounds : VarSort n c s -> LTE (S n) (length c)
 varIdxInBounds VarSortLastValue = lteRefl
 varIdxInBounds (VarSortLastType _) = lteRefl

@@ -54,30 +54,16 @@ data Sort : Type where
   ||| The idris judgment (term : Term context (SortValue type)) should be read as the lambductive judgment (context |- term : type)
   ||| @type The type of the value
   ||| @ok `type` is not a type universe
-  SortValue : (type : Term context (SortType _)) -> .{auto ok : TypeNotU type} -> Sort
-
-data SubContext : Context -> Context -> Type
+  SortValue : (type : Term context (SortType level)) -> .{auto ok : TypeNotU type} -> Sort
 
 ||| The variable context of the term
 data Context : Type where
   ||| The empty context
   Nil : Context
   ||| Add a variable to an existing context
-  ||| @type The type of the new variable
   ||| @context The existing context
-  ||| @ok The context of `type` is a subcontext of `context`
-  (::) : (type : Term typeContext (SortType _)) ->
-         (context : Context) ->
-         .{auto ok : SubContext typeContext context} ->
-         Context
-
-||| Subcontext relation
-data SubContext : Context -> Context -> Type where
-  ||| Any context is a subcontext of itself
-  SubContextRefl : SubContext context context
-  ||| If one context is a subcontext of the tail of another, it is a subcontext of that other
-  SubContextCons : SubContext sub super ->
-                   SubContext sub ((::) type super {ok})
+  ||| @type The type of the new variable
+  (::) : (context : Context) -> (type : Term context (SortType level)) -> Context
 
 data VarSort : Nat -> Context -> Sort -> Type
 
@@ -89,17 +75,9 @@ data Term : Context -> Sort -> Type where
   U : (level : Level) -> .{auto ok : LevelLT level level'} -> Term context (SortType level')
   ||| A dependent function type
   ||| @domain The domain of the function
-  ||| @domainContextOk The context of `domain` is a subcontext of the context of the function type
-  ||| @domainLevelOk The level of `domain` is less than or equal to the universe containing the function type's level
   ||| @range The (possibly dependent) range of the function
-  ||| @rangeContextOk The context of `range` is a subcontext of the context obtained by consing `domain` to the function type's context
-  ||| @rangeLevelOk The level of `range` is less than or equal to the universe containing the function type's level
-  Pi : (domain : Term domainContext (SortType domainLevel)) ->
-       .{auto domainContextOk : SubContext domainContext context} ->
-       .{auto domainLevelOk : LevelLTE domainLevel level} ->
-       (range : Term rangeContext (SortType rangeLevel)) ->
-       .{auto rangeContextOk : SubContext rangeContext (domain :: context)} ->
-       .{auto rangeLevelOk : LevelLTE rangeLevel level} ->
+  Pi : (domain : Term context (SortType level)) ->
+       (range : Term (context :: domain) (SortType level)) ->
        Term context (SortType level)
   ||| A variable
   |||
@@ -111,18 +89,18 @@ data Term : Context -> Sort -> Type where
 ||| Calculate the length of a context
 length : Context -> Nat
 length [] = Z
-length (_ :: tail) = S (length tail)
+length (tail :: _) = S (length tail)
 
 ||| The valid sort, if any, corresponding to a given variable index and context
 |||
 ||| @idx The variable index
 data VarSort : (idx : Nat) -> Context -> Sort -> Type where
   ||| The last variable of a context whose head is a universe is a type of that universe's level or greater
-  VarSortLastType : LevelLTE level level' -> VarSort (length context) ((U {ok} level) :: context) (SortType level')
+  VarSortLastType : LevelLTE level level' -> VarSort (length context) (context :: (U {ok} level)) (SortType level')
   ||| The last variable of a context whose head is not a universe is a value of that type
-  VarSortLastValue : VarSort (length context) (type :: context) (SortValue {ok} type)
+  VarSortLastValue : VarSort (length context) (context :: type) (SortValue {ok} type)
   ||| The sort of a given variable index doesn't change when adding a new type to the head of its context
-  VarSortCons : VarSort n context sort -> VarSort n (type :: context) sort
+  VarSortCons : VarSort n context sort -> VarSort n (context :: type) sort
 
 ||| Types that are not universes
 data TypeNotU : Term context sort -> Type where
@@ -144,7 +122,7 @@ instance Show (Term context sort) where
 
     map : ({context : Context} -> {sort : Sort} -> Term context sort -> a) -> Context -> List a
     map f [] = []
-    map f (head :: tail) = (f head) :: (map f tail)
+    map f (tail :: head) = (f head) :: (map f tail)
 
     showVar : Nat -> String
     showVar n = singleton (chr ((cast n) + 65))
@@ -160,5 +138,3 @@ instance Show (Term context sort) where
     showSort : Sort -> String
     showSort (SortType level) = "U " ++ showLevel level
     showSort (SortValue type) = showTerm False type
-
- 
