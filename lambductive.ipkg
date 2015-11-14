@@ -1,6 +1,5 @@
 package lambductive
 
-sourcedir = src
 modules = Lambductive.Core, Lambductive.Proof.Irrelevance
 main = Lambductive.Core
 
