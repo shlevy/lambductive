@@ -79,6 +79,10 @@ data Term : Context -> TypeJudgment -> Type where
   ||| @idx The index of the variable in its context
   ||| @ok `idx` is in bounds of context
   Var : (idx : Nat) -> .{auto ok : InContextBounds idx context} -> Term context (varIsType idx context)
+  ||| A lambda abstraction
+  ||| @body The body of the function
+  ||| @domain The type of the new variable
+  Lam : (body : Term (context :: domain) typeJudgment) -> Term context NotType
 
 varIsType Z (_ :: (U level)) = IsType level
 varIsType Z (_ :: _) = NotType
