@@ -1,6 +1,6 @@
 package lambductive
 
-modules = Lambductive.Core, Lambductive.Proof.Irrelevance
+modules = Lambductive.Core
 main = Lambductive.Core
 
 opts = "--warnreach"

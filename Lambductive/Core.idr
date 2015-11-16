@@ -3,43 +3,19 @@ module Lambductive.Core
 
 %default total
 
-||| The infinite hierarchy of universe levels
-data Level : Type where
-  ||| The increasing side of the hierarchy
-  |||
-  ||| A bigger `distance` means a bigger level
-  ||| @distance The distance from the smallest `Bigger` level
-  Bigger : (distance : Nat) -> Level
-  ||| The decreasing side of the hierarchy
-  |||
-  ||| A bigger `distance` means a smaller level
-  ||| @distance The (negative) distance from the biggest `Samller` level
-  Smaller : (distance : Nat) -> Level
-
-||| The successor of a level
-S : Level -> Level
-S (Bigger n) = Bigger (S n)
-S (Smaller Z) = Bigger Z
-S (Smaller (S k)) = Smaller k
-
-||| The bigger of two levels
-max : Level -> Level -> Level
-max (Bigger n) (Smaller _) = Bigger n
-max (Smaller _) (Bigger n) = Bigger n
-max (Bigger n) (Bigger m) = Bigger (max n m)
-max (Smaller n) (Smaller m) = Smaller (min n m)
-
-||| A judgment of whether a term is a type
-data TypeJudgment : Type where
+||| Judgments made about terms
+data Judgment : Type where
   ||| The term is a type
-  ||| @level The level of the universe the term belongs to
-  IsType : (level : Level) -> TypeJudgment
-  ||| The term is not a type
-  NotType : TypeJudgment
+  ||| @inhabitantJudgment The judgment that applies to inhabitants of the type
+  JudgmentType : (inhabitantJudgment : Judgment) -> Judgment
+  ||| The term is a value that is not a type
+  JudgmentValue : Judgment
 
 data Context : Type
 
-data Term : Context -> TypeJudgment -> Type
+data Term : Context -> Judgment -> Type
+
+infixl 7 :::
 
 ||| The variable context of the term
 data Context : Type where
@@ -48,42 +24,34 @@ data Context : Type where
   ||| Add a variable to an existing context
   ||| @context The existing context
   ||| @type The type of the new variable
-  (::) : (context : Context) -> (type : Term context (IsType level)) -> Context
+  ||| @varJudgment The judgment that applies to the variable
+  (:::) : (context : Context) -> (type : Term context (JudgmentType varJudgment)) -> Context
 
-||| An index is in the bounds of a context
-||| @idx The index
-data InContextBounds : (idx : Nat) -> Context -> Type where
-  ||| Zero is in bounds of any non-empty context
-  InBoundsZ : InContextBounds Z (context :: type)
-  ||| Adding a variable to a context makes one more index in bounds
-  InBoundsS : InContextBounds n context -> InContextBounds (S n) (context :: type)
-
-||| Determine if a variable is a type in a context
-||| @idx The index of the variable
-||| @context The context of the variable
-||| @ok `idx` is in the bounds of `context`
-varIsType : (idx : Nat) -> (context : Context) -> .{auto ok : InContextBounds idx context} -> TypeJudgment
+||| Variable indices
+||| @context The context indexed into
+||| @judgment The judgment of the variable at the index
+data VarIndex : (context : Context) -> (judgment : Judgment) -> Type where
+  ||| The base variable index
+  Z : VarIndex ((:::) context {varJudgment} type) varJudgment
+  ||| The successor of a variable index
+  S : VarIndex context judgment -> VarIndex (context ::: type) judgment
 
 ||| Terms of the calculus
-data Term : Context -> TypeJudgment -> Type where
+data Term : Context -> Judgment -> Type where
   ||| A type universe
-  ||| @level The level of the universe
-  U : (level : Level) -> Term context (IsType (S level))
+  U : Term context (JudgmentType (JudgmentType JudgmentValue))
   ||| A dependent function type
   ||| @domain The domain of the function
+  ||| @domainJudgment The judgment that applies to inhabitants of `domain`
   ||| @range The (possibly dependent) range of the function
-  Pi : (domain : Term context (IsType domainLevel)) ->
-       (range : Term (context :: domain) (IsType rangeLevel)) ->
-       Term context (IsType (max domainLevel rangeLevel))
+  ||| @rangeJudgment The judgment that applies to inhabitants of `range`
+  Pi : (domain : Term context (JudgmentType domainJudgment)) ->
+       (range : Term (context ::: domain) (JudgmentType rangeJudgment)) ->
+       Term context (JudgmentType JudgmentValue)
   ||| A De Bruijn variable
-  ||| @idx The index of the variable in its context
-  ||| @ok `idx` is in bounds of context
-  Var : (idx : Nat) -> .{auto ok : InContextBounds idx context} -> Term context (varIsType idx context)
+  Var : VarIndex context judgment -> Term context judgment
   ||| A lambda abstraction
   ||| @body The body of the function
-  ||| @domain The type of the new variable
-  Lam : (body : Term (context :: domain) typeJudgment) -> Term context NotType
-
-varIsType Z (_ :: (U level)) = IsType level
-varIsType Z (_ :: _) = NotType
-varIsType (S k) (context :: _) {ok=InBoundsS _} = varIsType k context
+  ||| @domain The domain of the function type which this lambda inhabits
+  ||| @rangeJudgment The judgment that applies to inhabitants of the range of the function type which this lambda inhabits
+  Lam : (body : Term (context ::: domain) rangeJudgment) -> Term context JudgmentValue
