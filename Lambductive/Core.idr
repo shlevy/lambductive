@@ -31,3 +31,5 @@ data Term : (context : Context) -> (type : TypeJudgment) -> Type where
   U : (level : Nat) -> Term context (IsType (S level))
   ||| A dependent function type
   Pi : (domain : Term context (IsType level)) -> (codomain : Term (context ::: domain) (IsType level)) -> Term context (IsType level)
+  ||| Lift a type to the next universe
+  Lift : Term context (IsType level) -> Term context (IsType (S level))
