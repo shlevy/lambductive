@@ -5,96 +5,85 @@ module Lambductive.Core
 
 data Context : Type
 
-data UniverseJudgment : Type where
-  IsUniverse : (level : Nat) -> UniverseJudgment
-  NotUniverse : UniverseJudgment
-
-data TypeJudgment : Context -> Type
-
-data Term : (context : Context) -> TypeJudgment context -> UniverseJudgment -> Type
-
-data TypeJudgment : (context : Context) -> Type where
-  ||| The term is a type
-  ||| @level The level of the universe it belongs to
-  IsType : (level : Nat) -> TypeJudgment context
-  ||| The term is not a type
-  ||| @type The type of the term
-  HasType : (type : Term context (IsType _) NotUniverse) -> TypeJudgment context
+data TypeTerm : Context -> Type
 
 infixl 7 :::
 
-||| Variable context of terms
+||| De Bruijn variable context
 data Context : Type where
   Nil : Context
   ||| Add a variable to a context
-  ||| @type The type of the new variable
-  (:::) : (context : Context) -> (type : Term context (IsType _) _) -> Context
+  ||| @type The type of the variable
+  (:::) : (context : Context) -> (type : TypeTerm context) -> Context
 
-||| The type judgment corresponding to the given type
-typeJudgment : Term context (IsType _) isUniverse -> TypeJudgment context
-typeJudgment _ {isUniverse=IsUniverse level} = IsType level
-typeJudgment type {isUniverse=NotUniverse} = HasType type
+||| Judgment of whether the interpretation of a term as a type code is reducible
+data InterpretReducibility : Type where
+  InterpretReducible : InterpretReducibility
+  InterpretIrreducible : InterpretReducibility
 
-addVarToTypeJudgment : TypeJudgment context -> TypeJudgment (context ::: type)
+data ValueTerm : (context : Context) -> TypeTerm context -> InterpretReducibility -> Type
 
-||| A De Bruijn index into a context
-||| @judgment The type judgment that applies to variables of this index
-data ContextIndex : (context : Context) -> (judgment : TypeJudgment context) -> Type where
-  Z : ContextIndex (_ ::: type) (addVarToTypeJudgment (typeJudgment type))
-  S : ContextIndex context judgment -> ContextIndex (context ::: type) (addVarToTypeJudgment judgment)
+||| Types of the calculus
+data TypeTerm : Context -> Type where
+  ||| A universe of type codes
+  U : (level : Nat) -> TypeTerm context
+  ||| Dependent function type
+  Pi : (domain : TypeTerm context) -> (codomain : TypeTerm (context ::: domain)) -> TypeTerm context
+  ||| An irreducible application of the type code interpretation operator
+  |||
+  ||| Use the `interpret` function to interpret type codes without any concern for reducibility
+  IrreducibleInterpret : ValueTerm context (U level) InterpretIrreducible -> TypeTerm context
 
-||| The maximum of two naturals, without using the Ord instance
-max : Nat -> Nat -> Nat
-max Z n = n
-max (S n) Z = S n
-max (S n) (S m) = S (max n m)
+||| Bring a type into a context with an extra variable at the head
+addVarToType : TypeTerm context -> TypeTerm (context ::: type)
 
-data Term : (context : Context) -> TypeJudgment context -> UniverseJudgment -> Type where
-  U : (level : Nat) -> Term context (IsType (S level)) (IsUniverse level)
-  Pi : (domain : Term context (IsType level1) _) -> (codomain : Term (context ::: domain) (IsType level2) _) -> Term context (IsType (max level1 level2)) NotUniverse
-  Var : ContextIndex context type -> Term context type NotUniverse
+||| An index into a context
+||| @type The type of the variable at that index
+data ContextIndex : (context : Context) -> (type : TypeTerm context) -> Type where
+  Z : ContextIndex (_ ::: type) (addVarToType type)
+  S : ContextIndex context type -> ContextIndex (context ::: type') (addVarToType type)
+
+||| Interpret a type code to a type
+interpret : ValueTerm context (U _) _ -> TypeTerm context
+
+||| Values of the calculus
+data ValueTerm : (context : Context) -> TypeTerm context -> InterpretReducibility -> Type where
+  Var : ContextIndex context type -> ValueTerm context type InterpretIrreducible
+
+interpret (Var idx) = IrreducibleInterpret (Var idx)
 
 ||| An offset into a context
 data ContextOffset : Context -> Type where
   OffZ : ContextOffset context
-  OffS : ContextOffset context -> ContextOffset (context ::: _)
+  OffS : ContextOffset context -> ContextOffset (context ::: type)
 
+||| Drop some variables from a context
 drop : (context : Context) -> ContextOffset context -> Context
 drop context OffZ = context
 drop (context ::: _) (OffS off) = drop context off
 
-||| Insert a variable at an offset into a context
-insertAt : (context : Context) -> (offset : ContextOffset context) -> Term (drop context offset) (IsType _) _ -> Context
+||| Insert a variable into a context at a given offset
+||| @type The type of the variable
+insertAt : (context : Context) -> (off : ContextOffset context) -> (type : TypeTerm (drop context off)) -> Context
 
-addVarToTypeAtOffset : (offset : ContextOffset context) ->
-                       Term context (IsType level) universeJudgment ->
-                       (type : Term (drop context offset) (IsType _) _) ->
-                       Term (insertAt context offset type) (IsType level) universeJudgment
+||| Bring a type into a context with an extra variable at a given offset
+addVarToTypeAtOffset : (off : ContextOffset context) -> TypeTerm context -> TypeTerm (insertAt context off type)
 
 insertAt context OffZ type = context ::: type
-insertAt (context ::: head) (OffS n) type = (insertAt context n type) ::: addVarToTypeAtOffset n head type
+insertAt (context ::: type) (OffS off) type' = insertAt context off type' ::: addVarToTypeAtOffset off type
 
-addVarToTypeJudgment (IsType level) = IsType level
-addVarToTypeJudgment (HasType type) {type=type'} = HasType (addVarToTypeAtOffset OffZ type type')
+||| Bring a type code into a context with an extra variable at a given offset
+addVarToCodeAtOffset : (off : ContextOffset context) -> ValueTerm context (U level) interpretReducible -> ValueTerm (insertAt context off type') (U level) interpretReducible
 
-addVarToTypeAtOffset _ (U level) _ = U level
-addVarToTypeAtOffset n (Pi domain codomain) type = Pi (addVarToTypeAtOffset n domain type) (addVarToTypeAtOffset (OffS n) codomain type)
-addVarToTypeAtOffset n (Var idx) type = Var (addVarToTypeContextIndex n idx type) where
-  caseIdx : (o : ContextOffset c) ->
-            (i : ContextIndex (c ::: t') j) ->
-            (t : Term (drop c o) (IsType _) _) ->
-            j = IsType l ->
-            ContextIndex (insertAt c o t ::: addVarToTypeAtOffset o t' t) (IsType l)
+addVarToTypeAtOffset _ (U level) = U level
+addVarToTypeAtOffset off (Pi domain codomain) = Pi (addVarToTypeAtOffset off domain) (addVarToTypeAtOffset (OffS off) codomain)
+addVarToTypeAtOffset off (IrreducibleInterpret code) = IrreducibleInterpret (addVarToCodeAtOffset off code)
 
-  addVarToTypeContextIndex : (o : ContextOffset c) ->
-                             (i : ContextIndex c (IsType l)) ->
-                             (t : Term (drop c o) (IsType l') _) ->
-                             ContextIndex (insertAt c o t) (IsType l)
-  addVarToTypeContextIndex OffZ i t = S i
-  addVarToTypeContextIndex (OffS o) i t = caseIdx o i t Refl
+addVarToType type = addVarToTypeAtOffset OffZ type
 
-  injectivityLemma : addVarToTypeJudgment j = IsType l -> j = IsType l
-  injectivityLemma {j=IsType l} Refl = Refl
+||| Bring a value into a context with an extra variable at a given offset
+addVarToValueAtOffset : (off : ContextOffset context) -> ValueTerm context type interpretReducible -> ValueTerm (insertAt context off type') (addVarToTypeAtOffset off type) interpretReducible
+addVarToValueAtOffset OffZ (Var idx) = Var (S idx)
+addVarToValueAtOffset (OffS off) (Var idx) = ?hole
 
-  caseIdx _ Z _ {t' = U _} Refl = Z
-  caseIdx o (S n) t p = S (addVarToTypeContextIndex o (replace (injectivityLemma p) n) t)
+addVarToCodeAtOffset off code = addVarToValueAtOffset off code
